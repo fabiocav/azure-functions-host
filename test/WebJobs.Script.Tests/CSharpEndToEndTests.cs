@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
+    [Trait("", "CSharp")]
     public class CSharpEndToEndTests : EndToEndTestsBase<CSharpEndToEndTests.TestFixture>
     {
         private const string JobLogTestFileName = "joblog.txt";
