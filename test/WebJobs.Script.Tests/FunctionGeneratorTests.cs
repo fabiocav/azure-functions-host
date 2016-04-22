@@ -22,10 +22,10 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    [Trait("Category", "E2E")]
     public class FunctionGeneratorTests
     {
         [Fact]
+        [Trait("Category", "NoCI")]
         public async Task Generate_EndToEnd()
         {
             // construct our TimerTrigger attribute ([TimerTrigger("00:00:02", RunOnStartup = true)])
