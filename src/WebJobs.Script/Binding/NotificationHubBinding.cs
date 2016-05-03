@@ -32,6 +32,14 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public string HubName { get; private set; }
 
+        public override Type DefaultType
+        {
+            get
+            {
+                return typeof(IAsyncCollector<string>);
+            }
+        }
+
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {
             Type attributeType = typeof(NotificationHubAttribute);

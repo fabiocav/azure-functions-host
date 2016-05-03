@@ -55,10 +55,29 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         }
 
         public string TableName { get; private set; }
+
         public string PartitionKey { get; private set; }
+
         public string RowKey { get; private set; }
+
         public int Take { get; private set; }
+
         public string Filter { get; private set; }
+
+        public override Type DefaultType
+        {
+            get
+            {
+                if (Access == FileAccess.Write)
+                {
+                    return typeof(IAsyncCollector<DynamicTableEntity>);
+                }
+                else
+                {
+                    return typeof(CloudTable);
+                }
+            }
+        }
 
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {

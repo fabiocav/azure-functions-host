@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -36,6 +37,24 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         public string MobileAppUri { get; private set; }
 
         public string ApiKey { get; private set; }
+
+        public override Type DefaultType
+        {
+            get
+            {
+                if (Access == FileAccess.Read && _bindingDirection == BindingDirection.In)
+                {
+                    return typeof(JObject);
+                }
+                else if (Access == FileAccess.Write && _bindingDirection == BindingDirection.Out)
+                {
+                    return typeof(IAsyncCollector<JObject>);
+                }
+
+                throw new NotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                    "The Access {0} and direction {1} are not supported.", Access, _bindingDirection));
+            }
+        }
 
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {

@@ -31,6 +31,14 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public string QueueOrTopicName { get; private set; }
 
+        public override Type DefaultType
+        {
+            get
+            {
+                return typeof(IAsyncCollector<string>);
+            }
+        }
+
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {
             var constructorTypes = new Type[] { typeof(string) };

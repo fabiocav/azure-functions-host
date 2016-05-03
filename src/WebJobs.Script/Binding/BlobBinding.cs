@@ -28,6 +28,14 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             _pathBindingTemplate = BindingTemplate.FromString(Path);
         }
 
+        public override Type DefaultType
+        {
+            get
+            {
+                return typeof(Stream);
+            }
+        }
+
         public string Path { get; private set; }
 
         public override async Task BindAsync(BindingContext context)

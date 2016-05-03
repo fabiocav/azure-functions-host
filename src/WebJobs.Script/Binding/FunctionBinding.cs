@@ -33,6 +33,8 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public FileAccess Access { get; private set; }
 
+        public abstract Type DefaultType { get; }
+
         public abstract Task BindAsync(BindingContext context);
 
         public abstract Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType);
@@ -124,6 +126,16 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
 
             return bindings;
+        }
+
+        internal virtual object ProcessScriptInput(object arg, IDictionary<string, object> functionContext)
+        {
+            return null;
+        }
+
+        internal virtual object ProcessScriptOutput(IEnumerable<BindingArgument> bindingArguments, object output, Dictionary<string, object> executionContext)
+        {
+            return null;
         }
 
         protected string Resolve(string name)

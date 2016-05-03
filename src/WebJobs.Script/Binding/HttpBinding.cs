@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -25,9 +26,195 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         {
         }
 
+        public override Type DefaultType
+        {
+            get
+            {
+                return typeof(HttpRequestMessage);
+            }
+        }
+
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {
             return null;
+        }
+
+        internal override object ProcessScriptInput(object arg, IDictionary<string, object> functionContext)
+        {
+            var request = arg as HttpRequestMessage;
+            if (request != null)
+            {
+                string rawBody = null;
+                var requestObject = CreateRequestObject(request, out rawBody);
+                object input = requestObject;
+
+                if (rawBody != null)
+                {
+                    requestObject["rawBody"] = rawBody;
+                    // TODO (INVUPD)
+                    // bindDataInput = rawBody;
+                }
+
+                // If this is a WebHook function, the input should be the
+                // request body
+                HttpTriggerBindingMetadata httpBinding = this.Metadata as HttpTriggerBindingMetadata;
+                if (httpBinding != null &&
+                    !string.IsNullOrEmpty(httpBinding.WebHookType))
+                {
+                    input = requestObject["body"];
+
+                    // make the entire request object available as well
+                    // this is symmetric with context.res which we also support
+                    functionContext.Add("req", requestObject);
+                }
+
+                return input;
+            }
+
+            return base.ProcessScriptInput(arg, functionContext);
+        }
+
+        internal override object ProcessScriptOutput(IEnumerable<BindingArgument> bindingArguments, object output, Dictionary<string, object> executionContext)
+        {
+            HttpRequestMessage request = bindingArguments.Where(b => b.Binding.Metadata.IsTrigger).FirstOrDefault().Input as HttpRequestMessage;
+
+            if (request == null)
+            {
+                return null;
+            }
+
+            string content = null;
+            if (output.GetType() == typeof(ExpandoObject) || output is Array)
+            {
+                content = JsonConvert.SerializeObject(output);
+            }
+            else if (output is string)
+            {
+                content = (string)output;
+            }
+            else
+            {
+                throw new InvalidOperationException(string.Format("Invalid value specified for binding '{0}'", Metadata.Name));
+            }
+
+            HttpResponseMessage response = null;
+            try
+            {
+                // attempt to read the content as a JObject
+                JObject jsonObject = JObject.Parse(content);
+
+                // TODO: This logic needs to be made more robust
+                // E.g. we might decide to use a Regex to determine if
+                // the json is a response body or not
+                if (jsonObject["body"] != null)
+                {
+                    HttpStatusCode statusCode = HttpStatusCode.OK;
+                    if (jsonObject["status"] != null)
+                    {
+                        statusCode = (HttpStatusCode)jsonObject.Value<int>("status");
+                    }
+
+                    string body = jsonObject["body"].ToString();
+
+                    response = new HttpResponseMessage(statusCode);
+                    response.Content = new StringContent(body);
+
+                    // we default the Content-Type here, but we override below with any
+                    // Content-Type header the user might have set themselves
+                    // TODO: rather than newing up an HttpResponseMessage investigate using
+                    // request.CreateResponse, which should allow WebApi Content negotiation to
+                    // take place.
+                    if (Utility.IsJson(body))
+                    {
+                        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    }
+
+                    // apply any user specified headers
+                    JObject headers = (JObject)jsonObject["headers"];
+                    if (headers != null)
+                    {
+                        foreach (var header in headers)
+                        {
+                            AddResponseHeader(response, header);
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // not a json response
+            }
+
+            if (response == null)
+            {
+                // if unable to parse a json response just send
+                // the raw content
+                response = new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(content)
+                };
+            }
+
+            request.Properties[ScriptConstants.AzureFunctionsHttpResponseKey] = response;
+
+            return null;
+        }
+
+        private static Dictionary<string, object> CreateRequestObject(HttpRequestMessage request, out string rawBody)
+        {
+            rawBody = null;
+
+            // TODO: need to provide access to remaining request properties
+            Dictionary<string, object> requestObject = new Dictionary<string, object>();
+            requestObject["originalUrl"] = request.RequestUri.ToString();
+            requestObject["method"] = request.Method.ToString().ToUpperInvariant();
+            requestObject["query"] = request.GetQueryNameValuePairs().ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            foreach (var header in request.Headers)
+            {
+                // since HTTP headers are case insensitive, we lower-case the keys
+                // as does Node.js request object
+                headers.Add(header.Key.ToLowerInvariant(), header.Value.First());
+            }
+            requestObject["headers"] = headers;
+
+            // if the request includes a body, add it to the request object 
+            if (request.Content != null && request.Content.Headers.ContentLength > 0)
+            {
+                string body = request.Content.ReadAsStringAsync().Result;
+                rawBody = body;
+                MediaTypeHeaderValue contentType = request.Content.Headers.ContentType;
+                Dictionary<string, object> jsonObject;
+                if (contentType != null && contentType.MediaType == "application/json" &&
+                    TryDeserializeJson(body, out jsonObject))
+                {
+                    // if the content - type of the request is json, deserialize into an object
+                    requestObject["body"] = jsonObject;
+                }
+                else
+                {
+                    requestObject["body"] = body;
+                }
+            }
+
+            return requestObject;
+        }
+
+        private static bool TryDeserializeJson<TResult>(string json, out TResult result)
+        {
+            result = default(TResult);
+
+            try
+            {
+                result = JsonConvert.DeserializeObject<TResult>(json, new DictionaryJsonConverter());
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public override async Task BindAsync(BindingContext context)
