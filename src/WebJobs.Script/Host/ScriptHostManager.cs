@@ -21,7 +21,9 @@ namespace Microsoft.Azure.WebJobs.Script
     {
         private readonly ScriptHostConfiguration _config;
         private readonly IScriptHostFactory _scriptHostFactory;
+        private readonly int _recycleLimit;
         private ScriptHost _currentInstance;
+        private uint _recycleCount;
 
         // ScriptHosts are not thread safe, so be clear that only 1 thread at a time operates on each instance. 
         // List of all outstanding ScriptHost instances. Only 1 of these (specified by _currentInstance)
@@ -39,10 +41,21 @@ namespace Microsoft.Azure.WebJobs.Script
         {
         }
 
+        public ScriptHostManager(ScriptHostConfiguration config, int recycleLimit)
+            : this(config, new ScriptHostFactory(), recycleLimit)
+        {
+        }
+
         public ScriptHostManager(ScriptHostConfiguration config, IScriptHostFactory scriptHostFactory)
+            : this(config, scriptHostFactory, -1)
+        {
+        }
+
+        public ScriptHostManager(ScriptHostConfiguration config, IScriptHostFactory scriptHostFactory, int recycleLimit)
         {
             _config = config;
             _scriptHostFactory = scriptHostFactory;
+            _recycleLimit = recycleLimit;
         }
 
         /// <summary>
@@ -142,6 +155,12 @@ namespace Microsoft.Azure.WebJobs.Script
                                 }
                             });
                     }
+
+                    if (_recycleLimit != -1 && _recycleCount >= _recycleLimit)
+                    {
+                        break;
+                    }
+                    _recycleCount++;
 
                     // Wait for a short period of time before restarting to
                     // avoid cases where a host level config error might cause

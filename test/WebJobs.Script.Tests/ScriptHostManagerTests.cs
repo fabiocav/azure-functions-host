@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             await fixture.Host.StopAsync();
             var config = fixture.Host.ScriptConfig;            
 
-            using (var manager = new ScriptHostManager(config))
+            using (var manager = new ScriptHostManager(config, recycleLimit: 0))
             {
                 // Background task to run while the main thread is pumping events at RunAndBlock(). 
                 Thread t = new Thread(_ =>

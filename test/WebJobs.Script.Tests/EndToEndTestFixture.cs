@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 FileLoggingEnabled = true
             };
 
-            HostManager = new ScriptHostManager(config);
+            HostManager = new ScriptHostManager(config, recycleLimit: 0);
 
             Thread t = new Thread(_ =>
             {
