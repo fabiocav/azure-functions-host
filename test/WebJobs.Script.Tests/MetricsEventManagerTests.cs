@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         private static async Task AwaitFunctionTasks(List<Task> taskList)
         {
-            Task.WaitAll(taskList.ToArray());
+            Task.WaitAll(taskList.ToArray(), TimeSpan.FromSeconds(10));
 
             // Let's make sure that the tracker is not running anymore
             await Task.Delay(TimeSpan.FromMilliseconds(MinimumRandomValueForLongRunningDurationInMs));
