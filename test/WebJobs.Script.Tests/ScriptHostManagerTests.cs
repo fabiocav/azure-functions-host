@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             factoryMock.Setup(f => f.Create(It.IsAny<ScriptHostConfiguration>()))
                 .Returns(hostMock.Object);
 
-            var target = new Mock<ScriptHostManager>(config, factoryMock.Object);
+            var target = new Mock<ScriptHostManager>(config, factoryMock.Object, 0);
             target.Protected().Setup("OnHostStarted")
                 .Throws(new Exception());
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                     return hostMock.Object;
                 });
 
-            var target = new Mock<ScriptHostManager>(config, factoryMock.Object);
+            var target = new Mock<ScriptHostManager>(config, factoryMock.Object, 0);
             Task taskIgnore = Task.Run(() => target.Object.RunAndBlock());
 
             // we expect a host exception immediately
