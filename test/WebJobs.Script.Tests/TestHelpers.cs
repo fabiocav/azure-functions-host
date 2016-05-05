@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             await TestHelpers.Await(() =>
             {
                 return blob.Exists();
-            });
+            }).ConfigureAwait(false);
 
             string result = await blob.DownloadTextAsync(Encoding.UTF8,
                 null, new BlobRequestOptions(), new Microsoft.WindowsAzure.Storage.OperationContext());
