@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         protected EndToEndTestFixture(string rootPath)
         {
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Initializing {0}", this.GetType().Name));
+
             string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
             _queueClient = storageAccount.CreateCloudQueueClient();
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             t.Start();
 
             TestHelpers.Await(() => HostManager.IsRunning).Wait();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} initialized.", this.GetType().Name));
         }
 
         public TestTraceWriter TraceWriter { get; private set; }
