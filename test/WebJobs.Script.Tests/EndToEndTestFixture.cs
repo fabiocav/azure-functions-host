@@ -110,8 +110,16 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         public void Dispose()
         {
-            HostManager.Stop();
-            HostManager.Dispose();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Disposing {0}", this.GetType().Name));
+            Task.Run(() =>
+            {
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Stopping host for {0}", this.GetType().Name));
+                HostManager.Stop();
+                HostManager.Dispose();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Host for {0} stopped", this.GetType().Name));
+            });
+
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} disposed.", this.GetType().Name));
         }
 
         private void DeleteEntities(string partition)
