@@ -40,7 +40,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         public void ErrorFunction_DoesNotBringDownHost()
         {
             // verify the cached error for the invalid function
-            Assert.Equal(1, Fixture.Host.FunctionErrors.Count);
+            Assert.True(Fixture.Host.FunctionErrors.Count == 1,
+                string.Format("Unexpected number of errors ({0}):\r\n", Fixture.Host.FunctionErrors.Count,
+                Fixture.Host.FunctionErrors.Aggregate(string.Empty,
+                (s, e) => s += string.Format("{0} :\r\n{1}", e.Key, string.Join(Environment.NewLine, e.Value)))));
+
             string error = Fixture.Host.FunctionErrors["Invalid"].Single();
             Assert.Equal("'invalid' is not a valid binding direction.", error);
         }
