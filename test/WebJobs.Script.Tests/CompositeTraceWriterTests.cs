@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class CompositeTraceWriterTests
     {
         [Fact]
+        [DisplayTestName]
         public void Trace_CallsInnerWriterTrace()
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void Trace_RespectsInnerWriterLevel()
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Error);
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void Flush_FlushesInternalWriters()
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Error);

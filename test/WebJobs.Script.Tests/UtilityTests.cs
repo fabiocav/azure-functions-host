@@ -10,6 +10,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class UtilityTests
     {
         [Fact]
+        [DisplayTestName]
         public void FlattenException_AggregateException_ReturnsExpectedResult()
         {
             ApplicationException ex1 = new ApplicationException("Incorrectly configured setting 'Foo'");
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void FlattenException_SingleException_ReturnsExpectedResult()
         {
             ApplicationException ex = new ApplicationException("Incorrectly configured setting 'Foo'");
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void FlattenException_MultipleInnerExceptions_ReturnsExpectedResult()
         {
             ApplicationException ex1 = new ApplicationException("Exception message 1");

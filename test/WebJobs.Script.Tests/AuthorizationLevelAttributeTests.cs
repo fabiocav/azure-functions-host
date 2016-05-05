@@ -50,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void OnAuthorization_AdminLevel_ValidHeader_Succeeds()
         {
             AuthorizationLevelAttribute attribute = new AuthorizationLevelAttribute(AuthorizationLevel.Admin);
@@ -85,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void OnAuthorization_AdminLevel_NoMasterKeySet_ReturnsUnauthorized()
         {
             AuthorizationLevelAttribute attribute = new AuthorizationLevelAttribute(AuthorizationLevel.Admin);
@@ -101,6 +103,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void OnAuthorization_AnonymousLevel_Succeeds()
         {
             AuthorizationLevelAttribute attribute = new AuthorizationLevelAttribute(AuthorizationLevel.Anonymous);
@@ -113,6 +116,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_ValidKeyHeader_MasterKey_ReturnsAdmin()
         {
             HttpRequestMessage request = new HttpRequestMessage();
@@ -124,6 +128,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_ValidKeyHeader_FunctionKey_ReturnsFunction()
         {
             // first verify the host level function key works
@@ -140,6 +145,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_InvalidKeyHeader_ReturnsAnonymous()
         {
             HttpRequestMessage request = new HttpRequestMessage();
@@ -151,6 +157,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_ValidCodeQueryParam_MasterKey_ReturnsAdmin()
         {
             Uri uri = new Uri(string.Format("http://functions/api/foo?code={0}", testMasterKeyValue));
@@ -162,6 +169,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_ValidCodeQueryParam_FunctionKey_ReturnsFunction()
         {
             // first try host level function key
@@ -177,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GetAuthorizationLevel_InvalidCodeQueryParam_ReturnsAnonymous()
         {
             Uri uri = new Uri(string.Format("http://functions/api/foo?code={0}", "invalid"));

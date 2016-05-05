@@ -47,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GivenLockFile_PackageReferencesAreResolved()
         {
             var functionMetadata = new FunctionMetadata()
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GivenPackagesWithAssemblyReferences_AssemblyReferencesAreResolved()
         {
             var functionMetadata = new FunctionMetadata()
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GivenPackagesWithFrameworkReferences_FrameworkReferencesAreResolved()
         {
             var functionMetadata = new FunctionMetadata()
@@ -100,6 +103,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void TryResolveAssembly_WithReferencedAssemblyName_ResolvesAssemblyPathAndReturnsTrue()
         {
             var functionMetadata = new FunctionMetadata()
@@ -119,6 +123,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void TryResolveAssembly_WithReferencedFrameworkAssemblyName_ResolvesAssemblyAndReturnsTrue()
         {
             var functionMetadata = new FunctionMetadata()

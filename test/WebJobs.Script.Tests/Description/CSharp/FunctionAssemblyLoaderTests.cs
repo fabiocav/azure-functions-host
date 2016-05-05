@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Description.CSharp
     public class FunctionAssemblyLoaderTests
     {
         [Fact]
+        [DisplayTestName]
         public void ResolveAssembly_WithIndirectPrivateDependency_IsResolved()
         {
             var resolver = new FunctionAssemblyLoader("c:\\");
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Description.CSharp
         }
 
         [Fact]
+        [DisplayTestName]
         public void ResolveAssembly_WithIndirectPrivateDependency_LogsIfResolutionFails()
         {
             var resolver = new FunctionAssemblyLoader("c:\\");

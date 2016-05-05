@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         private const int MinimumRandomValueForLongRunningDurationInMs = MinimumLongRunningDurationInMs + 200;
 
         [Fact]
+        [DisplayTestName]
         public async Task MetricsEventManager_BasicTest()
         {
             var argsList = new List<FunctionExecutionEventArguments>();
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MetricsEventManager_MultipleConcurrentShortFunctionExecutions()
         {
             var argsList = new List<FunctionExecutionEventArguments>();
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MetricsEventManager_NonParallelExecutionsShouldHaveDifferentExecutionId()
         {
             var argsList = new List<FunctionExecutionEventArguments>();

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         // Update a script file (the function.json) to force the ScriptHost to re-index and pick up new changes. 
         // Test with timers: 
         [Fact]
+        [DisplayTestName]
         public async Task UpdateFileAndRestart()
         {
             Random r = new Random();
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void RunAndBlock_DisposesOfHost_WhenExceptionIsThrown()
         {
             ScriptHostConfiguration config = new ScriptHostConfiguration()
@@ -88,6 +90,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task RunAndBlock_SetsLastError_WhenExceptionIsThrown()
         {
             ScriptHostConfiguration config = new ScriptHostConfiguration()

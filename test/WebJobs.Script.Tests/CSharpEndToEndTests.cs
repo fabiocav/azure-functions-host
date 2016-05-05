@@ -20,30 +20,35 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ServiceBusQueueTriggerToBlobTest()
         {
             await ServiceBusQueueTriggerToBlobTestImpl();
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MobileTables()
         {
             await MobileTablesTest(isCSharp: true);
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task DocumentDB()
         {
             await DocumentDBTest();
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task NotificationHub()
         {
             await NotificationHubTest("NotificationHubOut");
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task NotificationHub_Out_Notification()
         {
             await Fixture.TouchProjectJson("NotificationHubOutNotification");
@@ -51,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MobileTablesTable()
         {
             var id = Guid.NewGuid().ToString();
@@ -67,6 +73,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ScriptReference_LoadsScript()
         {
             var request = new System.Net.Http.HttpRequestMessage();
@@ -81,6 +88,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ApiHub()
         {
             await ApiHubTest();

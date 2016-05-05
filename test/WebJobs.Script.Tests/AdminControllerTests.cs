@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class AdminControllerTests
     {
         [Fact]
+        [DisplayTestName]
         public void AdminController_HasAuthorizationLevelAttribute()
         {
             AuthorizationLevelAttribute attribute = typeof(AdminController).GetCustomAttribute<AuthorizationLevelAttribute>();

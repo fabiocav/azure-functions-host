@@ -21,6 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task WebHookTrigger_GenericJson()
         {
             string testData = Guid.NewGuid().ToString();
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName] 
         public async Task HttpTrigger_Get()
         {
             string testData = Guid.NewGuid().ToString();

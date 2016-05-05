@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ManualTrigger_Invoke_Succeeds()
         {
             CloudBlobContainer outputContainer = _fixture.BlobClient.GetContainerReference("samples-output");
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task Home_Get_Succeeds()
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, string.Empty);
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTrigger_Get_Succeeds()
         {
             string uri = "api/httptrigger?code=hyexydhln844f2mb7hgsup2yf8dowlb0885mbiq1&name=Mathew";
@@ -78,6 +81,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTrigger_Disabled_SucceedsWithAdminKey()
         {
             // first try with function key only - expect 404
@@ -96,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task GenericWebHook_CSharp_Post_Succeeds()
         {
             string uri = "api/webhook-generic-csharp?code=827bdzxhqy3xc62cxa2hmfsh6gxzhg30s5pi64tu";
@@ -112,6 +117,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task AzureWebHook_CSharp_Post_Succeeds()
         {
             string uri = "api/webhook-azure-csharp?code=yKjiimZjC1FQoGlaIj8TUfGltnPE/f2LhgZNq6Fw9/XfAOGHmSgUlQ==";
@@ -128,6 +134,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTriggerWithObject_CSharp_Post_Succeeds()
         {
             string uri = "api/httptriggerwithobject-csharp?code=zlnu496ve212kk1p84ncrtdvmtpembduqp25ajjc";
@@ -144,6 +151,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task GenericWebHook_Post_Succeeds()
         {
             string uri = "api/webhook-generic?code=1388a6b0d05eca2237f10e4a4641260b0a08f3a5";
@@ -160,6 +168,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task GenericWebHook_Post_AdminKey_Succeeds()
         {
             // Verify that sending the admin key bypasses WebHook auth
@@ -177,6 +186,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task QueueTriggerBatch_Succeeds()
         {
             // write the input message
@@ -199,6 +209,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task BlobTriggerBatch_Succeeds()
         {
             // write input blob

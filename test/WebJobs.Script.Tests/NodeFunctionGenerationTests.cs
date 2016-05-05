@@ -21,6 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class NodeFunctionGenerationTests
     {
         [Fact]
+        [DisplayTestName]
         public void GenerateTimerTriggerFunction()
         {
             TimerBindingMetadata trigger = new TimerBindingMetadata
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GenerateQueueTriggerFunction()
         {
             QueueBindingMetadata trigger = new QueueBindingMetadata
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GenerateBlobTriggerFunction()
         {
             BlobBindingMetadata trigger = new BlobBindingMetadata
@@ -83,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GenerateHttpTriggerFunction()
         {
             HttpTriggerBindingMetadata trigger = new HttpTriggerBindingMetadata
@@ -102,6 +106,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GenerateManualTriggerFunction()
         {
             BindingMetadata trigger = new BindingMetadata
@@ -121,6 +126,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GenerateServiceBusTriggerFunction()
         {
             ServiceBusBindingMetadata trigger = new ServiceBusBindingMetadata

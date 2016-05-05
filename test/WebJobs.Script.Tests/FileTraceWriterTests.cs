@@ -28,6 +28,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MultipleConcurrentInstances_WritesAreSerialized()
         {
             int numLines = 100;
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task SetNewLogFile_PurgesOldLogFiles()
         {
             DirectoryInfo directory = new DirectoryInfo(_logFilePath);
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void SetNewLogFile_EmptyDirectory_Succeeds()
         {
             DirectoryInfo directory = new DirectoryInfo(_logFilePath);

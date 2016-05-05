@@ -254,6 +254,7 @@
     <Compile Include="CSharpEndToEndTests.cs" />
     <Compile Include="CSharpFunctionSignatureTests.cs" />
     <Compile Include="Description\CSharp\FunctionAssemblyLoaderTests.cs" />
+    <Compile Include="DisplayTestNameAttribute.cs" />
     <Compile Include="EndToEndTestFixture.cs" />
     <Compile Include="EndToEndTestsBase.cs" />
     <Compile Include="FileTraceWriterTests.cs" />

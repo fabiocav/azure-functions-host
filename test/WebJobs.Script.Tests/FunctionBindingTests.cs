@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class FunctionBindingTests
     {
         [Fact]
+        [DisplayTestName]
         public async Task BindAsyncCollectorAsync_JObjectCollection()
         {
             JArray values = new JArray();
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ReadAsCollection_ObjectArray()
         {
             JArray values = new JArray();
@@ -93,6 +95,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ReadAsCollection_ObjectSingleton()
         {
             JObject jsonObject = new JObject
@@ -116,6 +119,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ReadAsCollection_StringArray()
         {
             JArray values = new JArray();
@@ -136,6 +140,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ReadAsCollection_StringSingleton()
         {
             byte[] bytes = Encoding.UTF8.GetBytes("Value1");

@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ServiceBusQueueTriggerToBlobTest()
         {
             await ServiceBusQueueTriggerToBlobTestImpl();
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         /// the error did not bring down the host.
         /// </summary>
         [Fact]
+        [DisplayTestName]
         public void ErrorFunction_DoesNotBringDownHost()
         {
             // verify the cached error for the invalid function
@@ -46,30 +48,35 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task TableInput()
         {
             await TableInputTest();
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task DocumentDB()
         {
             await DocumentDBTest();
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task NotificationHub()
         {
             await NotificationHubTest("NotificationHubOut");
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task MobileTables()
         {
             await MobileTablesTest();
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task EventHub()
         {
             // Event Hub needs the following environment vars:
@@ -97,6 +104,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task ManualTrigger()
         {
             string testData = Guid.NewGuid().ToString();
@@ -115,6 +123,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task Scenario_DoneCalledMultipleTimes_ErrorIsLogged()
         {
             ClearFunctionLogs("Scenarios");
@@ -139,6 +148,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTrigger_Get()
         {
             HttpRequestMessage request = new HttpRequestMessage
@@ -172,6 +182,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTrigger_Post_PlainText()
         {
             string testData = Guid.NewGuid().ToString();
@@ -200,6 +211,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task HttpTrigger_Post_Json()
         {
             string testData = Guid.NewGuid().ToString();
@@ -235,6 +247,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task WebHookTrigger_GenericJson()
         {
             string testData = Guid.NewGuid().ToString();
@@ -264,6 +277,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public async Task TimerTrigger()
         {
             // job is running every second, so give it a few seconds to

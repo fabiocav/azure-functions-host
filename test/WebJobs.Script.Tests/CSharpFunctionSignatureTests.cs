@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class CSharpFunctionSignatureTests
     {
         [Fact]
+        [DisplayTestName]
         public void Matches_IsTrue_WhenParametersAreEqual()
         {
           var function1 = @"using System;
@@ -42,6 +43,7 @@ public static void Run(string id, out string output)
         }
 
         [Fact]
+        [DisplayTestName]
         public void Matches_IsTrue_WhenParametersAreEquivalent()
         {
             var function1 = @"using System;
@@ -75,6 +77,7 @@ out String output )
         }
 
         [Fact]
+        [DisplayTestName]
         public void Matches_IsTrue_WhenUsingLocalTypes()
         {
             var function1 = @"using System;
@@ -98,6 +101,7 @@ public class Test
         }
 
         [Fact]
+        [DisplayTestName]
         public void Matches_IsTrue_WhenUsingLocalTypesAsGenericArguments()
         {
             var function1 = @"using System;
@@ -122,6 +126,7 @@ public class Test
         }
 
         [Fact]
+        [DisplayTestName]
         public void Matches_IsTrue_WhenUsingLocalTypesAsDeepGenericArguments()
         {
             var function1 = @"using System;
@@ -147,6 +152,7 @@ public class Test
         }
 
         [Fact]
+        [DisplayTestName]
         public void Matches_IsFalse_WhenNotUsingLocalTypes()
         {
             var function1 = @"using System;

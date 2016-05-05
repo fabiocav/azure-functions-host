@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         private const string ID = "5a709861cab44e68bfed5d2c2fe7fc0c";
 
         [Fact]
+        [DisplayTestName]
         public void ApplyConfiguration_TopLevel()
         {
             JObject config = new JObject();
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ApplyConfiguration_Queues()
         {
             JObject config = new JObject();
@@ -58,6 +60,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ApplyConfiguration_Singleton()
         {
             JObject config = new JObject();
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ApplyConfiguration_Tracing()
         {
             JObject config = new JObject();
@@ -111,6 +115,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void ApplyFunctionsFilter()
         {
             JObject config = new JObject();
@@ -128,6 +133,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void TryGetFunctionFromException_FunctionMatch()
         {
             string stack = "TypeError: Cannot read property 'is' of undefined\n" +

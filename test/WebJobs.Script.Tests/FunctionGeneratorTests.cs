@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     public class FunctionGeneratorTests
     {
         [Fact]
+        [DisplayTestName]
         public async Task Generate_EndToEnd()
         {
             // construct our TimerTrigger attribute ([TimerTrigger("00:00:02", RunOnStartup = true)])
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void Generate_WithMultipleOutParameters()
         {
             string functionName = "FunctionWithOuts";
@@ -111,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void Generate_WithValueTypes_Succeeds()
         {
             string functionName = "FunctionWithValueTypes";
@@ -150,6 +153,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void Generate_WithOutParams_CorrectlyUpdatesOutput()
         {
             string functionName = "FunctionWithOutValue";
@@ -190,6 +194,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        [DisplayTestName]
         public void GeneratedMethods_WithOutParams_DoNotCauseDeadlocks()
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
