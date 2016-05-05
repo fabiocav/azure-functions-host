@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             DateTime start = DateTime.Now;
             while (!condition())
             {
-                await Task.Delay(pollingInterval);
+                await Task.Delay(pollingInterval).ConfigureAwait(false);
 
                 if ((DateTime.Now - start).TotalMilliseconds > timeout)
                 {

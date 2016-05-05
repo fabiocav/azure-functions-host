@@ -53,7 +53,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Assert.Equal(concurrency, argsList.Count);
         }
 
-        [Fact(Skip = "CI Issue")]
+        [Fact]
+        [DisplayTestName]
         public async Task MetricsEventManager_MultipleConcurrentLongFunctionExecutions()
         {
             var argsList = new List<FunctionExecutionEventArguments>();
@@ -90,7 +91,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                     SerializeFunctionExecutionEventArguments(argsList)));
         }
 
-        [Fact(Skip = "CI Issue")]
+        [Fact]
+        [DisplayTestName]
         public async Task MetricsEventManager_MultipleConcurrentFunctions()
         {
             var argsList = new List<FunctionExecutionEventArguments>();
