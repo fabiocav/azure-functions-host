@@ -38,7 +38,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }).ConfigureAwait(false);
 
             string result = await blob.DownloadTextAsync(Encoding.UTF8,
-                null, new BlobRequestOptions(), new Microsoft.WindowsAzure.Storage.OperationContext());
+                null, new BlobRequestOptions(), new Microsoft.WindowsAzure.Storage.OperationContext())
+                .ConfigureAwait(false);
 
             return result;
         }
