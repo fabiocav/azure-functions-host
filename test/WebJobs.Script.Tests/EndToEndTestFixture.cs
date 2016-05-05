@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         protected EndToEndTestFixture(string rootPath)
         {
-            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Initializing {0}", this.GetType().Name));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "Initializing {0} with path '{1}'", this.GetType().Name, rootPath));
 
             string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);

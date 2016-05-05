@@ -3,16 +3,16 @@
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class BashEndToEndTests : EndToEndTestsBase<BashEndToEndTests.TestFixture>
+    public class BashEndToEndTests : EndToEndTestsBase<BashEndToEndTests.BashTestFixture>
     {
-        public BashEndToEndTests(TestFixture fixture)
+        public BashEndToEndTests(BashTestFixture fixture)
             : base(fixture)
         {
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class BashTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\Bash")
+            public BashTestFixture() : base(@"TestScripts\Bash")
             {
             }
         }

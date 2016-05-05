@@ -11,11 +11,11 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class CSharpEndToEndTests : EndToEndTestsBase<CSharpEndToEndTests.TestFixture>
+    public class CSharpEndToEndTests : EndToEndTestsBase<CSharpEndToEndTests.CSharpTestFixture>
     {
         private const string JobLogTestFileName = "joblog.txt";
 
-        public CSharpEndToEndTests(TestFixture fixture) : base(fixture)
+        public CSharpEndToEndTests(CSharpTestFixture fixture) : base(fixture)
         {
         }
 
@@ -94,9 +94,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             await ApiHubTest();
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class CSharpTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\CSharp")
+            public CSharpTestFixture() : base(@"TestScripts\CSharp")
             {
                 File.Delete(JobLogTestFileName);
                 DownloadNuget();

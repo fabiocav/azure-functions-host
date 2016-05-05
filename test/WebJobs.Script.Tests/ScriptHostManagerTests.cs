@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            var fixture = new NodeEndToEndTests.TestFixture();
+            var fixture = new NodeEndToEndTests.NodeTestFixture();
             var blob1 = UpdateOutputName("testblob", "first", fixture);
 
             await fixture.Host.StopAsync();

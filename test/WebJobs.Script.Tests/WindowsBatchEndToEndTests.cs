@@ -13,9 +13,9 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class WindowsBatchEndToEndTests : EndToEndTestsBase<WindowsBatchEndToEndTests.TestFixture>
+    public class WindowsBatchEndToEndTests : EndToEndTestsBase<WindowsBatchEndToEndTests.WindowsBatchTestFixture>
     {
-        public WindowsBatchEndToEndTests(TestFixture fixture) 
+        public WindowsBatchEndToEndTests(WindowsBatchTestFixture fixture) 
             : base(fixture)
         {
         }
@@ -86,9 +86,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Assert.Equal("Please pass a value on the query string", body.Trim());
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class WindowsBatchTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\WindowsBatch")
+            public WindowsBatchTestFixture() : base(@"TestScripts\WindowsBatch")
             {
             }
         }

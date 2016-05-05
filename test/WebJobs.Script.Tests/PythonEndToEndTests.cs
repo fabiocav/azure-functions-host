@@ -3,16 +3,16 @@
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class PythonEndToEndTests : EndToEndTestsBase<PythonEndToEndTests.TestFixture>
+    public class PythonEndToEndTests : EndToEndTestsBase<PythonEndToEndTests.PythonTestFixture>
     {
-        public PythonEndToEndTests(TestFixture fixture)
+        public PythonEndToEndTests(PythonTestFixture fixture)
             : base(fixture)
         {
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class PythonTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\Python")
+            public PythonTestFixture() : base(@"TestScripts\Python")
             {
             }
         }

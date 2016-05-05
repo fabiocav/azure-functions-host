@@ -3,16 +3,16 @@
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class PhpEndToEndTests : EndToEndTestsBase<PhpEndToEndTests.TestFixture>
+    public class PhpEndToEndTests : EndToEndTestsBase<PhpEndToEndTests.PhpTestFixture>
     {
-        public PhpEndToEndTests(TestFixture fixture)
+        public PhpEndToEndTests(PhpTestFixture fixture)
             : base(fixture)
         {
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class PhpTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\Php")
+            public PhpTestFixture() : base(@"TestScripts\Php")
             {
             }
         }

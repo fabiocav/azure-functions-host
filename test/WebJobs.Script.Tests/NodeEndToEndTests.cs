@@ -17,11 +17,11 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class NodeEndToEndTests : EndToEndTestsBase<NodeEndToEndTests.TestFixture>
+    public class NodeEndToEndTests : EndToEndTestsBase<NodeEndToEndTests.NodeTestFixture>
     {
         private const string JobLogTestFileName = "joblog.txt";
 
-        public NodeEndToEndTests(TestFixture fixture) : base(fixture)
+        public NodeEndToEndTests(NodeTestFixture fixture) : base(fixture)
         {
         }
 
@@ -296,9 +296,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }, timeout: 10 * 1000);
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class NodeTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\Node")
+            public NodeTestFixture() : base(@"TestScripts\Node")
             {
                 File.Delete(JobLogTestFileName);
             }

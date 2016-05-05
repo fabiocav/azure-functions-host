@@ -3,16 +3,16 @@
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public class FSharpEndToEndTests : EndToEndTestsBase<FSharpEndToEndTests.TestFixture>
+    public class FSharpEndToEndTests : EndToEndTestsBase<FSharpEndToEndTests.FSharpTestFixture>
     {
-        public FSharpEndToEndTests(TestFixture fixture)
+        public FSharpEndToEndTests(FSharpTestFixture fixture)
             : base(fixture)
         {
         }
 
-        public class TestFixture : EndToEndTestFixture
+        public class FSharpTestFixture : EndToEndTestFixture
         {
-            public TestFixture() : base(@"TestScripts\FSharp")
+            public FSharpTestFixture() : base(@"TestScripts\FSharp")
             {
             }
         }
