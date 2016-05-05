@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         {
             // verify the cached error for the invalid function
             Assert.True(Fixture.Host.FunctionErrors.Count == 1,
-                string.Format("Unexpected number of errors ({0}):\r\n", Fixture.Host.FunctionErrors.Count,
+                string.Format("Unexpected number of errors ({0}):\r\n{1}", Fixture.Host.FunctionErrors.Count,
                 Fixture.Host.FunctionErrors.Aggregate(string.Empty,
                 (s, e) => s += string.Format("{0} :\r\n{1}", e.Key, string.Join(Environment.NewLine, e.Value)))));
 
