@@ -10,6 +10,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     {
         String,
         Binary,
-        Stream
+        Stream,
+        Object
     }
 }

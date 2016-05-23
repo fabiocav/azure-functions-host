@@ -10,6 +10,7 @@
             "name": "item",
             "direction": "out",
             "databaseName": "ItemDb",
+            "dataType": "object",
             "collectionName": "ItemCollection",
             "createIfNotExists": true
         }

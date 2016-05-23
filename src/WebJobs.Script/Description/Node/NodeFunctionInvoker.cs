@@ -4,21 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Dynamic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using EdgeJs;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Binding;
 using Microsoft.Azure.WebJobs.Script.Diagnostics;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
@@ -28,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private readonly Collection<FunctionBinding> _inputBindings;
         private readonly Collection<FunctionBinding> _outputBindings;
         private readonly string _script;
-        private readonly DictionaryJsonConverter _dictionaryJsonConverter = new DictionaryJsonConverter();
         private readonly BindingMetadata _trigger;
         private readonly IMetricsLogger _metrics;
+        private readonly List<IBindingArgumentConverter> _argumentConverters;
 
         private Func<object, Task<object>> _scriptFunc;
         private Func<object, Task<object>> _clearRequireCache;
@@ -59,6 +55,15 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             _metrics = host.ScriptConfig.HostConfig.GetService<IMetricsLogger>();
 
             InitializeFileWatcherIfEnabled();
+
+            // This needs to be moved. Here to prototype the invoker changes
+            _argumentConverters = new List<IBindingArgumentConverter>
+            {
+                new StreamBindingArgumentConverter(),
+                new HttpBindingArgumentConverter(),
+                new JObjectBindingArgumentConverter(),
+                new SimpleBindingArgumentConverter()
+            };
         }
 
         /// <summary>
@@ -108,10 +113,10 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
         public override async Task Invoke(object[] parameters)
         {
-            object input = parameters[0];
-            TraceWriter traceWriter = (TraceWriter)parameters[1];
+            TraceWriter traceWriter = (TraceWriter)parameters[0];
+            ExecutionContext functionExecutionContext = (ExecutionContext)parameters[1];
             IBinderEx binder = (IBinderEx)parameters[2];
-            ExecutionContext functionExecutionContext = (ExecutionContext)parameters[3];
+            object triggerInput = parameters[3];
             string invocationId = functionExecutionContext.InvocationId.ToString();
 
             FunctionStartedEvent startedEvent = new FunctionStartedEvent(functionExecutionContext.InvocationId, Metadata);
@@ -121,16 +126,29 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             {
                 TraceWriter.Info(string.Format("Function started (Id={0})", invocationId));
 
-                DataType dataType = _trigger.DataType ?? DataType.String;
-                var scriptExecutionContext = CreateScriptExecutionContext(input, dataType, binder, traceWriter, TraceWriter, functionExecutionContext);
-                var bindingData = (Dictionary<string, string>)scriptExecutionContext["bindingData"];
-                bindingData["InvocationId"] = invocationId;
+                // Binding parameters, exclude system parameters
+                var argumentBindings = _inputBindings.Union(_outputBindings);
+                List<BindingArgument> bindingArguments = parameters.Skip(3)
+                    .Zip(argumentBindings, (arg, binding) => new BindingArgument(binding, arg))
+                    .ToList();
+                
+                var scriptExecutionContext = await CreateScriptInvocationContextAsync(triggerInput, bindingArguments, traceWriter, TraceWriter, functionExecutionContext);
 
-                await ProcessInputBindingsAsync(binder, scriptExecutionContext, bindingData);
+                var invocationContext = new InvocationContext(bindingArguments, scriptExecutionContext);
+
+                PopulateBindingData(invocationContext, invocationId, binder);
 
                 object functionResult = await ScriptFunc(scriptExecutionContext);
 
-                await ProcessOutputBindingsAsync(_outputBindings, input, binder, bindingData, scriptExecutionContext, functionResult);
+                await ProcessFunctionOutputAsync(invocationContext);
+
+                for (int i = 0; i < bindingArguments.Count; i++)
+                {
+                    if (bindingArguments[i].Binding.Metadata.Direction == BindingDirection.Out)
+                    {
+                        parameters[i] = bindingArguments[i].Value;
+                    }
+                }
 
                 TraceWriter.Info(string.Format("Function completed (Success, Id={0})", invocationId));
             }
@@ -146,83 +164,80 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
         }
 
-        private async Task ProcessInputBindingsAsync(IBinderEx binder, Dictionary<string, object> executionContext, Dictionary<string, string> bindingData)
+        private static void PopulateBindingData(InvocationContext invocationContext, string invocationId, IBinderEx binder)
         {
-            var bindings = (Dictionary<string, object>)executionContext["bindings"];
+            var bindingData = (Dictionary<string, string>)invocationContext.ExecutionContext["bindingData"];
+            bindingData["InvocationId"] = invocationId;
 
-            // create an ordered array of all inputs and add to
-            // the execution context. These will be promoted to
-            // positional parameters
-            List<object> inputs = new List<object>();
-            inputs.Add(bindings[_trigger.Name]);
-
-            var nonTriggerInputBindings = _inputBindings.Where(p => !p.Metadata.IsTrigger);
-            foreach (var inputBinding in nonTriggerInputBindings)
+            foreach (var item in binder.BindingContext.BindingData)
             {
-                BindingContext bindingContext = new BindingContext
-                {
-                    Binder = binder,
-                    BindingData = bindingData,
-                    DataType = inputBinding.Metadata.DataType ?? DataType.String
-                };
-                await inputBinding.BindAsync(bindingContext);
-
-                // Perform any JSON to object conversions if the
-                // value is JSON or a JToken
-                object value = bindingContext.Value;
-                object converted;
-                if (TryConvertJson(bindingContext.Value, out converted))
-                {
-                    value = converted;
-                }
-
-                bindings.Add(inputBinding.Metadata.Name, value);
-                inputs.Add(value);
+                bindingData.Add(item.Key, item.Value?.ToString());
             }
-
-            executionContext["inputs"] = inputs;
         }
 
-        private static async Task ProcessOutputBindingsAsync(Collection<FunctionBinding> outputBindings, object input, IBinderEx binder, 
-            Dictionary<string, string> bindingData, Dictionary<string, object> scriptExecutionContext, object functionResult)
+        private async Task ProcessInputParametersAsync(InvocationContext context, IDictionary<string, object> bindings)
         {
-            if (outputBindings == null)
-            {
-                return;
-            }
+            var convertedInputs = new List<object>();
 
-            // if the function returned binding values via the function result,
-            // apply them to context.bindings
-            var bindings = (Dictionary<string, object>)scriptExecutionContext["bindings"];
-            IDictionary<string, object> functionOutputs = functionResult as IDictionary<string, object>;
-            if (functionOutputs != null)
+            foreach (var argument in context.BindingArguments.Where(b => b.Binding.Metadata.Direction == BindingDirection.In))
             {
-                foreach (var output in functionOutputs)
+                DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+                IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argument.Value.GetType(), dataType));
+                // Process the input, giving the binding the ability to perform 
+                // any required conversions and setup the context
+                if (converter != null)
                 {
-                    bindings[output.Key] = output.Value;
+                    object input = await converter?.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
+
+                    bindings.Add(argument.Binding.Metadata.Name, input);
+                    convertedInputs.Add(input);
                 }
             }
 
-            foreach (FunctionBinding binding in outputBindings)
-            {
-                // get the output value from the script
-                object value = null;
-                if (bindings.TryGetValue(binding.Metadata.Name, out value) && value != null)
-                {
-                    if (value.GetType() == typeof(ExpandoObject) ||
-                        (value is Array && value.GetType() != typeof(byte[])))
-                    {
-                        value = JsonConvert.SerializeObject(value);
-                    }
+            context.ExecutionContext["inputs"] = convertedInputs;
+        }
 
-                    BindingContext bindingContext = new BindingContext
+        private async Task ProcessFunctionOutputAsync(InvocationContext context)
+        {
+            var bindings = (Dictionary<string, object>)context.ExecutionContext["bindings"];
+
+            // Special hadling of HTTP bindings.
+            // If we have an HTTP output binding, create an argument for it (as it is not provided by the SDK)
+            FunctionBinding httpOutputBinding = _outputBindings.FirstOrDefault(b => b.Metadata.Type == BindingType.Http);
+            if (httpOutputBinding != null)
+            {
+                context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));
+            }
+
+            foreach (var argument in context.BindingArguments.Where(a => a.Binding.Metadata.Direction == BindingDirection.Out))
+            { 
+                object output;
+                bindings.TryGetValue(argument.Binding.Metadata.Name, out output);
+
+                Type argumentType = argument.Value?.GetType() ?? argument.Binding.GetArgumentType();
+                DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+                IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argumentType, dataType));
+
+                if (converter != null)
+                {
+                    object convertedOutput = await converter.ConvertFromValueAsync(argumentType, output, dataType, argument.Binding, context);
+
+                    if (convertedOutput != null)
                     {
-                        TriggerValue = input,
-                        Binder = binder,
-                        BindingData = bindingData,
-                        Value = value
-                    };
-                    await binding.BindAsync(bindingContext);
+                        Type outputType = convertedOutput.GetType();
+                        Type inputType = argument.Value?.GetType();
+                        var asyncCollectorType = typeof(IAsyncCollector<>).MakeGenericType(outputType);
+                        if (asyncCollectorType.IsAssignableFrom(inputType))
+                        {
+                            MethodInfo addMethod = argumentType.GetMethod(nameof(IAsyncCollector<object>.AddAsync), new[] { outputType, typeof(CancellationToken) });
+                            Task addAsyncTask = (Task)addMethod.Invoke(argument.Value, new[] { convertedOutput, CancellationToken.None });
+                            await addAsyncTask;                          
+                        }
+                        else
+                        {
+                            argument.Value = convertedOutput;
+                        }
+                    }
                 }
             }
         }
@@ -250,8 +265,11 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
         }
 
-        private Dictionary<string, object> CreateScriptExecutionContext(object input, DataType dataType, IBinderEx binder, TraceWriter traceWriter, TraceWriter fileTraceWriter, ExecutionContext functionExecutionContext)
+        private async Task<Dictionary<string, object>> CreateScriptInvocationContextAsync(object triggerInput, List<BindingArgument> bindingArguments, TraceWriter traceWriter, 
+            TraceWriter fileTraceWriter, ExecutionContext functionExecutionContext)
         {
+            DataType dataType = _trigger.DataType ?? DataType.String;
+
             // create a TraceWriter wrapper that can be exposed to Node.js
             var log = (Func<object, Task<object>>)(p =>
             {
@@ -284,178 +302,22 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 { "bind", bind }
             };
 
-            // This is the input value that we will use to extract binding data.
-            // Since binding data extraction is based on JSON parsing, in the
-            // various conversions below, we set this to the appropriate JSON
-            // string when possible.
-            object bindDataInput = input;
+            var invocationContext = new InvocationContext(bindingArguments, context);
 
-            if (input is HttpRequestMessage)
-            {
-                // convert the request to a json object
-                HttpRequestMessage request = (HttpRequestMessage)input;
-                string rawBody = null;
-                var requestObject = CreateRequestObject(request, out rawBody);
-                input = requestObject;
+            //// This is the input value that we will use to extract binding data.
+            //// Since binding data extraction is based on JSON parsing, in the
+            //// various conversions below, we set this to the appropriate JSON
+            //// string when possible.
+            //// TODO: (INVOKERWORK) Need to get binding data working
+            //// object bindDataInput = input;
 
-                if (rawBody != null)
-                {
-                    requestObject["rawBody"] = rawBody;
-                    bindDataInput = rawBody;
-                }
+            // TODO: (INVOKERWORK) Need to get this working
+            // context["bindingData"] = GetBindingData(bindDataInput, binder);
+            invocationContext.ExecutionContext["bindingData"] = new Dictionary<string, string>();
 
-                // If this is a WebHook function, the input should be the
-                // request body
-                HttpTriggerBindingMetadata httpBinding = _trigger as HttpTriggerBindingMetadata;
-                if (httpBinding != null &&
-                    !string.IsNullOrEmpty(httpBinding.WebHookType))
-                {
-                    input = requestObject["body"];
-
-                    // make the entire request object available as well
-                    // this is symmetric with context.res which we also support
-                    context["req"] = requestObject;
-                }
-            }
-            else if (input is TimerInfo)
-            {
-                TimerInfo timerInfo = (TimerInfo)input;
-                var inputValues = new Dictionary<string, object>()
-                {
-                    { "isPastDue", timerInfo.IsPastDue }
-                };
-                if (timerInfo.ScheduleStatus != null)
-                {
-                    inputValues["last"] = timerInfo.ScheduleStatus.Last.ToString("s", CultureInfo.InvariantCulture);
-                    inputValues["next"] = timerInfo.ScheduleStatus.Next.ToString("s", CultureInfo.InvariantCulture);
-                }
-                input = inputValues;
-            }
-            else if (input is Stream)
-            {
-                FunctionBinding.ConvertStreamToValue((Stream)input, dataType, ref input);
-            }
-
-            context["bindingData"] = GetBindingData(bindDataInput, binder);
-
-            // if the input is json, try converting to an object or array
-            object converted;
-            if (TryConvertJson(input, out converted))
-            {
-                input = converted;
-            }
-
-            bindings.Add(_trigger.Name, input);
+            await ProcessInputParametersAsync(invocationContext, bindings);
 
             return context;
-        }
-
-        private Dictionary<string, object> CreateRequestObject(HttpRequestMessage request, out string rawBody)
-        {
-            rawBody = null;
-
-            // TODO: need to provide access to remaining request properties
-            Dictionary<string, object> requestObject = new Dictionary<string, object>();
-            requestObject["originalUrl"] = request.RequestUri.ToString();
-            requestObject["method"] = request.Method.ToString().ToUpperInvariant();
-            requestObject["query"] = request.GetQueryNameValuePairs().ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
-
-            Dictionary<string, string> headers = new Dictionary<string, string>();
-            foreach (var header in request.Headers)
-            {
-                // since HTTP headers are case insensitive, we lower-case the keys
-                // as does Node.js request object
-                headers.Add(header.Key.ToLowerInvariant(), header.Value.First());
-            }
-            requestObject["headers"] = headers;
-
-            // if the request includes a body, add it to the request object 
-            if (request.Content != null && request.Content.Headers.ContentLength > 0)
-            {
-                MediaTypeHeaderValue contentType = request.Content.Headers.ContentType;
-                object jsonObject;
-                object body = null;
-                if (contentType != null)
-                {
-                    if (contentType.MediaType == "application/json")
-                    {
-                        body = request.Content.ReadAsStringAsync().Result;
-                        if (TryConvertJson((string)body, out jsonObject))
-                        {
-                            // if the content - type of the request is json, deserialize into an object or array
-                            rawBody = (string)body;
-                            body = jsonObject;
-                        }
-                    }
-                    else if (contentType.MediaType == "application/octet-stream")
-                    {
-                        body = request.Content.ReadAsByteArrayAsync().Result;
-                    }
-                }
-
-                if (body == null)
-                {
-                    // if we don't have a content type, default to reading as string
-                    body = rawBody = request.Content.ReadAsStringAsync().Result;
-                }
-
-                requestObject["body"] = body;
-            }
-
-            return requestObject;
-        }
-
-        /// <summary>
-        /// If the specified input is a JSON string or JToken, attempt to deserialize it into
-        /// an object or array.
-        /// </summary>
-        private bool TryConvertJson(object input, out object result)
-        {
-            if (input is JToken)
-            {
-                input = input.ToString();
-            }
-
-            result = null;
-            string inputString = input as string;
-            if (inputString == null)
-            {
-                return false;
-            }
-
-            if (Utility.IsJson(inputString))
-            {
-                // if the input is json, try converting to an object or array
-                Dictionary<string, object> jsonObject;
-                Dictionary<string, object>[] jsonObjectArray;
-                if (TryDeserializeJson(inputString, out jsonObject))
-                {
-                    result = jsonObject;
-                    return true;
-                }
-                else if (TryDeserializeJson(inputString, out jsonObjectArray))
-                {
-                    result = jsonObjectArray;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool TryDeserializeJson<TResult>(string json, out TResult result)
-        {
-            result = default(TResult);
-
-            try
-            {
-                result = JsonConvert.DeserializeObject<TResult>(json, _dictionaryJsonConverter);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         /// <summary>
