@@ -5,17 +5,12 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.Bindings.Path;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public class ServiceBusBinding : FunctionBinding
     {
-        private readonly BindingTemplate _queueOrTopicNameBindingTemplate;
-
         public ServiceBusBinding(ScriptHostConfiguration config, ServiceBusBindingMetadata metadata, FileAccess access) : 
             base(config, metadata, access)
         {
@@ -26,7 +21,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
 
             QueueOrTopicName = queueOrTopicName;
-            _queueOrTopicNameBindingTemplate = BindingTemplate.FromString(QueueOrTopicName);
         }
 
         public string QueueOrTopicName { get; private set; }
@@ -47,30 +41,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
 
             return attributes;
-        }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            string boundQueueName = QueueOrTopicName;
-            if (context.BindingData != null)
-            {
-                boundQueueName = _queueOrTopicNameBindingTemplate.Bind(context.BindingData);
-            }
-
-            boundQueueName = Resolve(boundQueueName);
-
-            var attribute = new ServiceBusAttribute(boundQueueName);
-            Attribute[] additionalAttributes = null;
-            if (!string.IsNullOrEmpty(Metadata.Connection))
-            {
-                additionalAttributes = new Attribute[]
-                {
-                    new ServiceBusAccountAttribute(Metadata.Connection)
-                };
-            }
-            RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute, additionalAttributes);
-
-            await BindAsyncCollectorAsync<byte[]>(context, runtimeContext);
         }
 
         internal static void AddServiceBusAccountAttribute(Collection<CustomAttributeBuilder> attributes, string connection)

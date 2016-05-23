@@ -91,8 +91,9 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             ApplyMethodLevelAttributes(functionMetadata, triggerMetadata, methodAttributes);
 
+            FunctionBinding triggerBinding = inputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Name, triggerMetadata.Name, StringComparison.Ordinal) == 0);
             Collection<ParameterDescriptor> parameters = new Collection<ParameterDescriptor>();
-            ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerMetadata);
+            ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerBinding);
             parameters.Add(triggerParameter);
 
             // Add a TraceWriter for logging
@@ -107,37 +108,38 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return parameters;
         }
 
-        protected virtual ParameterDescriptor CreateTriggerParameter(BindingMetadata triggerMetadata, Type parameterType = null)
+        protected virtual ParameterDescriptor CreateTriggerParameter(FunctionBinding triggerBinding, Type parameterType = null)
         {
             ParameterDescriptor triggerParameter = null;
+            BindingMetadata triggerMetadata = triggerBinding.Metadata;
             switch (triggerMetadata.Type)
             {
                 case BindingType.QueueTrigger:
-                    parameterType = DefaultParameterType(parameterType, triggerMetadata.DataType);
+                    parameterType = DefaultParameterType(parameterType, triggerBinding);
                     triggerParameter = ParseQueueTrigger((QueueBindingMetadata)triggerMetadata, parameterType);
                     break;
                 case BindingType.EventHubTrigger:
-                    parameterType = DefaultParameterType(parameterType, triggerMetadata.DataType);
+                    parameterType = DefaultParameterType(parameterType, triggerBinding);
                     triggerParameter = ParseEventHubTrigger((EventHubBindingMetadata)triggerMetadata, parameterType);
                     break;
                 case BindingType.BlobTrigger:
-                    triggerParameter = ParseBlobTrigger((BlobBindingMetadata)triggerMetadata, parameterType ?? typeof(Stream));
+                    triggerParameter = ParseBlobTrigger((BlobBindingMetadata)triggerMetadata, parameterType ?? triggerBinding.GetArgumentType());
                     break;
                 case BindingType.ServiceBusTrigger:
-                    parameterType = DefaultParameterType(parameterType, triggerMetadata.DataType);
+                    parameterType = DefaultParameterType(parameterType, triggerBinding);
                     triggerParameter = ParseServiceBusTrigger((ServiceBusBindingMetadata)triggerMetadata, parameterType);
                     break;
                 case BindingType.TimerTrigger:
-                    triggerParameter = ParseTimerTrigger((TimerBindingMetadata)triggerMetadata, parameterType ?? typeof(TimerInfo));
+                    triggerParameter = ParseTimerTrigger((TimerBindingMetadata)triggerMetadata, parameterType ?? triggerBinding.GetArgumentType());
                     break;
                 case BindingType.HttpTrigger:
-                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerMetadata, parameterType ?? typeof(HttpRequestMessage));
+                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerMetadata, parameterType ?? triggerBinding.GetArgumentType());
                     break;
                 case BindingType.ManualTrigger:
-                    triggerParameter = ParseManualTrigger(triggerMetadata, parameterType ?? typeof(string));
+                    triggerParameter = ParseManualTrigger(triggerMetadata, parameterType ?? triggerBinding.GetArgumentType());
                     break;
                 case BindingType.ApiHubFileTrigger:
-                    triggerParameter = ParseApiHubFileTrigger((ApiHubBindingMetadata)triggerMetadata, parameterType ?? typeof(Stream));
+                    triggerParameter = ParseApiHubFileTrigger((ApiHubBindingMetadata)triggerMetadata, parameterType ?? triggerBinding.GetArgumentType());
                     break;
             }
 
@@ -184,11 +186,11 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         /// If the specified parameter Type is null, attempt to default it based on
         /// the DataType value specified.
         /// </summary>
-        private static Type DefaultParameterType(Type parameterType, DataType? dataType)
+        private static Type DefaultParameterType(Type parameterType, FunctionBinding binding)
         {
             if (parameterType == null)
             {
-                parameterType = dataType == DataType.Binary ? typeof(byte[]) : typeof(string);
+                parameterType = binding.GetArgumentType();
             }
 
             return parameterType;

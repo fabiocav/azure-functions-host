@@ -32,7 +32,36 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public FileAccess Access { get; private set; }
 
-        public abstract Task BindAsync(BindingContext context);
+        public virtual Type GetArgumentType()
+        {
+            var dataType = Metadata.DataType ?? DataType.String;
+
+            Type result = null;
+            switch (dataType)
+            {
+                case DataType.String:
+                    result = typeof(string);
+                    break;
+                case DataType.Binary:
+                    result = typeof(byte[]);
+                    break;
+                case DataType.Stream:
+                    result = typeof(Stream);
+                    break;
+                case DataType.Object:
+                    result = typeof(JObject);
+                    break;
+                default:
+                    throw new NotSupportedException($"The data type {Metadata.DataType.Value.ToString("G")} is not supported");
+            }
+
+            if (Metadata.Direction == BindingDirection.Out)
+            {
+                result = typeof(IAsyncCollector<>).MakeGenericType(result);
+            }
+
+            return result;
+        }
 
         public abstract Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType);
 
@@ -46,6 +75,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 {
                     switch (bindingMetadata.Type)
                     {
+                        case BindingType.ManualTrigger:
+                            bindings.Add(new ManualBinding(config, bindingMetadata, FileAccess.Read));
+                            break;
                         case BindingType.Blob:
                         case BindingType.BlobTrigger:
                             BlobBindingMetadata blobBindingMetadata = (BlobBindingMetadata)bindingMetadata;
@@ -253,7 +285,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             {
                 // Read the value into the context Value converting based on data type
                 object converted = null;
-                ConvertStreamToValue(stream, context.DataType, ref converted);
+                
                 context.Value = converted;
             }
         }

@@ -105,10 +105,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 bool addHttpRequestSystemParameter = false;
                 foreach (var parameter in parameters)
                 {
+                    FunctionBinding binding = bindings.FirstOrDefault(b => string.Compare(b.Metadata.Name, parameter.Name, StringComparison.Ordinal) == 0);
+
                     // Is it the trigger parameter?
                     if (string.Compare(parameter.Name, triggerMetadata.Name, StringComparison.Ordinal) == 0)
                     {
-                        ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerMetadata, parameter.ParameterType);
+                        ParameterDescriptor triggerParameter = CreateTriggerParameter(binding, parameter.ParameterType);
                         descriptors.Add(triggerParameter);
 
                         if (triggerMetadata.Type == BindingType.HttpTrigger && 
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                         }
 
                         var descriptor = new ParameterDescriptor(parameter.Name, parameter.ParameterType);
-                        var binding = bindings.FirstOrDefault(b => string.Compare(b.Metadata.Name, parameter.Name, StringComparison.Ordinal) == 0);
+
                         if (binding != null)
                         {
                             Collection<CustomAttributeBuilder> customAttributes = binding.GetCustomAttributes(parameter.ParameterType);

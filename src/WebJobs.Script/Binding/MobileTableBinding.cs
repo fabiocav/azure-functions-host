@@ -6,33 +6,19 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.Bindings.Path;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public class MobileTableBinding : FunctionBinding
     {
-        private readonly BindingDirection _bindingDirection;
-        private readonly BindingTemplate _idBindingTemplate;
-
         public MobileTableBinding(ScriptHostConfiguration config, MobileTableBindingMetadata metadata, FileAccess access) :
             base(config, metadata, access)
         {
             Id = metadata.Id;
-            if (!string.IsNullOrEmpty(Id))
-            {
-                _idBindingTemplate = BindingTemplate.FromString(Id);
-            }
-
             TableName = metadata.TableName;
             MobileAppUri = metadata.Connection;
             ApiKey = metadata.ApiKey;
-
-            _bindingDirection = metadata.Direction;
         }
 
         public string TableName { get; private set; }
@@ -67,30 +53,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             {
                 new CustomAttributeBuilder(constructor, new object[] { }, props, propValues)
             };
-        }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            string boundId = ResolveBindingTemplate(Id, _idBindingTemplate, context.BindingData);
-
-            MobileTableAttribute attribute = new MobileTableAttribute
-            {
-                TableName = TableName,
-                Id = boundId,
-                MobileAppUri = MobileAppUri,
-                ApiKey = ApiKey
-            };
-
-            RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute);
-
-            if (Access == FileAccess.Read && _bindingDirection == BindingDirection.In)
-            {
-                context.Value = await context.Binder.BindAsync<JObject>(runtimeContext);
-            }
-            else if (Access == FileAccess.Write && _bindingDirection == BindingDirection.Out)
-            {
-                await BindAsyncCollectorAsync<JObject>(context, runtimeContext);
-            }
         }
     }
 }

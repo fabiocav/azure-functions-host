@@ -77,7 +77,9 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                             DataType = DataType.Stream, 
                             Value = stream
                         };
-                        await inputBinding.BindAsync(bindingContext);
+
+                        // TODO: (INVOKERWORK) Fix this....
+                        //await inputBinding.BindAsync(bindingContext);
                     }
                 }
 
@@ -110,7 +112,9 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                                 BindingData = bindingData,
                                 Value = stream
                             };
-                            await outputBinding.BindAsync(bindingContext);
+                            // TODO: (INVOKERWORK) Fix this...
+                            // await outputBinding.BindAsync(bindingContext);
+                            await Task.CompletedTask;
                         }
                     }
                 }

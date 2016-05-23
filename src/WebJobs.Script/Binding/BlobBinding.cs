@@ -5,9 +5,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.Bindings.Path;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
 using Microsoft.WindowsAzure.Storage.Blob;
 
@@ -15,8 +12,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public class BlobBinding : FunctionBinding
     {
-        private readonly BindingTemplate _pathBindingTemplate;
-
         public BlobBinding(ScriptHostConfiguration config, BlobBindingMetadata metadata, FileAccess access) : base(config, metadata, access)
         {
             if (string.IsNullOrEmpty(metadata.Path))
@@ -25,34 +20,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
 
             Path = metadata.Path;
-            _pathBindingTemplate = BindingTemplate.FromString(Path);
         }
 
         public string Path { get; private set; }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            string boundBlobPath = Path;
-            if (context.BindingData != null)
-            {
-                boundBlobPath = _pathBindingTemplate.Bind(context.BindingData);
-            }
-
-            boundBlobPath = Resolve(boundBlobPath);
-
-            var attribute = new BlobAttribute(boundBlobPath, Access);
-            Attribute[] additionalAttributes = null;
-            if (!string.IsNullOrEmpty(Metadata.Connection))
-            {
-                additionalAttributes = new Attribute[]
-                {
-                    new StorageAccountAttribute(Metadata.Connection)
-                };
-            }
-
-            RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute, additionalAttributes);
-            await BindStreamAsync(context, Access, runtimeContext);
-        }
 
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {

@@ -5,27 +5,21 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.Bindings.Path;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public class EventHubBinding : FunctionBinding
     {
-        private readonly BindingTemplate _eventHubNameBindingTemplate;
-
         public EventHubBinding(ScriptHostConfiguration config, EventHubBindingMetadata metadata, FileAccess access) : 
             base(config, metadata, access)
         {
             if (string.IsNullOrEmpty(metadata.Path))
             {
-                throw new ArgumentException("The event hub path cannot be null or empty.");
+                throw new ArgumentException("The event hub path cannot be null or empty.", nameof(metadata));
             }
 
             EventHubName = metadata.Path;
-            _eventHubNameBindingTemplate = BindingTemplate.FromString(EventHubName);
         }
 
         public string EventHubName { get; private set; }
@@ -39,22 +33,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             {
                 new CustomAttributeBuilder(typeof(ServiceBus.EventHubAttribute).GetConstructor(constructorTypes), constructorArguments)
             };
-        }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            string eventHubName = this.EventHubName;
-            if (context.BindingData != null)
-            {
-                eventHubName = _eventHubNameBindingTemplate.Bind(context.BindingData);
-            }
-
-            eventHubName = Resolve(eventHubName);
-
-            var attribute = new ServiceBus.EventHubAttribute(eventHubName);
-            RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute);
-
-            await BindAsyncCollectorAsync<byte[]>(context, runtimeContext);
         }
     }
 }

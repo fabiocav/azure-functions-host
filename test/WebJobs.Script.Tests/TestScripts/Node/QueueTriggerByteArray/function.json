@@ -11,6 +11,7 @@
         "type": "queue",
         "name": "output",
         "direction": "out",
+        "dataType": "binary",
         "queueName": "test-input-byte"
     }
   ]

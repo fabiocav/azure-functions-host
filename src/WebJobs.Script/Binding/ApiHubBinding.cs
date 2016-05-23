@@ -5,17 +5,12 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.Bindings.Path;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public class ApiHubBinding : FunctionBinding
     {
-        private readonly BindingTemplate _pathBindingTemplate;
-
         public ApiHubBinding(ScriptHostConfiguration config, ApiHubBindingMetadata apiHubBindingMetadata, FileAccess access) : base(config, apiHubBindingMetadata, access)
         {
             if (apiHubBindingMetadata == null)
@@ -30,7 +25,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
             Key = apiHubBindingMetadata.Key;
             Path = apiHubBindingMetadata.Path;
-            _pathBindingTemplate = BindingTemplate.FromString(Path);
         }
 
         public string Key { get; private set; }
@@ -49,22 +43,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             attributes.Add(attribute);
 
             return attributes;
-        }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            string boundBlobPath = Path;
-            if (context.BindingData != null)
-            {
-                boundBlobPath = _pathBindingTemplate.Bind(context.BindingData);
-            }
-
-            boundBlobPath = Resolve(boundBlobPath);
-
-            var attribute = new ApiHubFileAttribute(Key, boundBlobPath, Access);
-
-            RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute);
-            await BindStreamAsync(context, Access, runtimeContext);
         }
     }
 }

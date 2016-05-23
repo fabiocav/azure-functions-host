@@ -6,17 +6,13 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
 using Microsoft.Azure.NotificationHubs;
-using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     internal class NotificationHubBinding : FunctionBinding
     {
-        private BindingDirection _bindingDirection;
-
         public NotificationHubBinding(ScriptHostConfiguration config, NotificationHubBindingMetadata metadata, FileAccess access) :
             base(config, metadata, access)
         {
@@ -24,7 +20,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             Platform = metadata.Platform;
             ConnectionString = metadata.Connection;
             HubName = metadata.HubName;
-            _bindingDirection = metadata.Direction;
         }
 
         public string TagExpression { get; private set; }
@@ -59,24 +54,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             {
                 new CustomAttributeBuilder(constructor, new object[] { }, props, propValues)
             };
-        }
-
-        public override async Task BindAsync(BindingContext context)
-        {
-            // Only output bindings are supported.
-            if (Access == FileAccess.Write && _bindingDirection == BindingDirection.Out)
-            {
-                NotificationHubAttribute attribute = new NotificationHubAttribute
-                {
-                    TagExpression = TagExpression,
-                    Platform = Platform,
-                    ConnectionString = ConnectionString,
-                    HubName = HubName
-                };
-
-                RuntimeBindingContext runtimeContext = new RuntimeBindingContext(attribute);
-                await BindAsyncCollectorAsync<string>(context, runtimeContext);
-            }
         }
     }
 }

@@ -168,6 +168,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             Type t = tb.CreateType();
 
+            System.IO.File.WriteAllText($@"c:\typedump\{Guid.NewGuid()}.txt", string.Join(Environment.NewLine, t.GetMembers().Where(m => m is MethodInfo).Select(m => m.ToString())));
             return t;
         }
     }
