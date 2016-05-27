@@ -1,5 +1,5 @@
 @ECHO Off
-
+ECHO test
 SET Config=%1
 IF "%1"=="" (
   SET Config="Release"
