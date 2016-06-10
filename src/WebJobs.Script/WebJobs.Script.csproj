@@ -244,6 +244,7 @@
     <Compile Include="Binding\ArgumentConverters\SimpleBindingArgumentConverter.cs" />
     <Compile Include="Binding\ArgumentConverters\HttpBindingArgumentConverter.cs" />
     <Compile Include="Binding\ArgumentConverters\StreamBindingArgumentConverter.cs" />
+    <Compile Include="Binding\ArgumentConverters\TimerInfoBindingArgumentConverter.cs" />
     <Compile Include="Binding\BindingContext.cs" />
     <Compile Include="Binding\BlobBinding.cs" />
     <Compile Include="Binding\ArgumentConverters\IBindingArgumentConverter.cs" />
@@ -258,6 +259,7 @@
     <Compile Include="Binding\QueueBinding.cs" />
     <Compile Include="Binding\ServiceBusBinding.cs" />
     <Compile Include="Binding\TableBinding.cs" />
+    <Compile Include="Binding\TimerBinding.cs" />
     <Compile Include="Description\DotNet\DiagnosticExtensions.cs" />
     <Compile Include="Description\DotNet\CSharp\Analyzers\InvalidFileMetadataReferenceAnalyzer.cs" />
     <Compile Include="Description\Binding\ApiHubTableBindingMetadata.cs" />

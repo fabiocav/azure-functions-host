@@ -75,6 +75,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 {
                     switch (bindingMetadata.Type)
                     {
+                        case BindingType.TimerTrigger:
+                            bindings.Add(new TimerBinding(config, (TimerBindingMetadata)bindingMetadata, FileAccess.Read));
+                            break;
                         case BindingType.ManualTrigger:
                             bindings.Add(new ManualBinding(config, bindingMetadata, FileAccess.Read));
                             break;

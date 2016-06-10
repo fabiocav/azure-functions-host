@@ -24,6 +24,16 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public string Path { get; private set; }
 
+        public override Type GetArgumentType()
+        {
+            if (Metadata.Direction == BindingDirection.Out)
+            {
+                return typeof(Stream);
+            }
+
+            return base.GetArgumentType();
+        }
+
         public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {
             Collection<CustomAttributeBuilder> attributes = new Collection<CustomAttributeBuilder>();

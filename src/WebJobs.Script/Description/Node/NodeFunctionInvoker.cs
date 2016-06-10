@@ -62,7 +62,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 new StreamBindingArgumentConverter(),
                 new HttpBindingArgumentConverter(),
                 new JObjectBindingArgumentConverter(),
-                new SimpleBindingArgumentConverter()
+                new SimpleBindingArgumentConverter(),
+                new TimerInfoBindingArgumentConverter()
             };
         }
 
