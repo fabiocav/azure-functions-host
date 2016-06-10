@@ -1,3 +1,4 @@
 ﻿{
-    "id": "function-tests-node"
+  "functions": ["TimerTrigger"],
+  "id": "function-tests-node"
 }
