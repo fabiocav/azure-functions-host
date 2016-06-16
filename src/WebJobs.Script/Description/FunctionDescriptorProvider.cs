@@ -91,8 +91,10 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             ApplyMethodLevelAttributes(functionMetadata, triggerMetadata, methodAttributes);
 
+            FunctionBinding triggerBinding = inputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Name, triggerMetadata.Name, StringComparison.Ordinal) == 0);
+
             Collection<ParameterDescriptor> parameters = new Collection<ParameterDescriptor>();
-            ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerMetadata);
+            ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerBinding);
             parameters.Add(triggerParameter);
 
             // Add a TraceWriter for logging

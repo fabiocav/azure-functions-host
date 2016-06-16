@@ -79,83 +79,76 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         // TEMP - Since we're still using IBinder for non C#, we have to construct the Attributes
         // This code will go away soon
-        private Collection<Attribute> ResolveAttributes(Collection<Attribute> attributes, IReadOnlyDictionary<string, string> bindingData)
-        {
-            Collection<Attribute> resolvedAttributes = new Collection<Attribute>();
+        //private Collection<Attribute> ResolveAttributes(Collection<Attribute> attributes, IReadOnlyDictionary<string, string> bindingData)
+        //{
+        //    Collection<Attribute> resolvedAttributes = new Collection<Attribute>();
 
-            foreach (var attribute in attributes)
-            {
-                // Get the attribute construction info
-                var attributeConstructionInfo = GetAttributeBuilderInfo(attribute);
+        //    foreach (var attribute in attributes)
+        //    {
+        //        // Get the attribute construction info
+        //        var attributeConstructionInfo = GetAttributeBuilderInfo(attribute);
 
-                // resolve all attribute data
-                if (bindingData != null)
-                {
-                    if (attributeConstructionInfo.ConstructorArgs != null)
-                    {
-                        for (int i = 0; i < attributeConstructionInfo.ConstructorArgs.Length; i++)
-                        {
-                            string value = attributeConstructionInfo.ConstructorArgs[i] as string;
-                            if (value != null)
-                            {
-                                attributeConstructionInfo.ConstructorArgs[i] = ResolveAndBind(value, bindingData);
-                            }
-                        }
-                    }
+        //        // resolve all attribute data
+        //        if (bindingData != null)
+        //        {
+        //            if (attributeConstructionInfo.ConstructorArgs != null)
+        //            {
+        //                for (int i = 0; i < attributeConstructionInfo.ConstructorArgs.Length; i++)
+        //                {
+        //                    string value = attributeConstructionInfo.ConstructorArgs[i] as string;
+        //                    if (value != null)
+        //                    {
+        //                        attributeConstructionInfo.ConstructorArgs[i] = ResolveAndBind(value, bindingData);
+        //                    }
+        //                }
+        //            }
 
-                    if (attributeConstructionInfo.Properties != null)
-                    {
-                        foreach (var namedProperty in attributeConstructionInfo.Properties.Where(p => p.Value is string).ToArray())
-                        {
-                            string value = (string)namedProperty.Value;
-                            attributeConstructionInfo.Properties[namedProperty.Key] = ResolveAndBind(value, bindingData);
-                        }
-                    }
-                }
+        //            if (attributeConstructionInfo.Properties != null)
+        //            {
+        //                foreach (var namedProperty in attributeConstructionInfo.Properties.Where(p => p.Value is string).ToArray())
+        //                {
+        //                    string value = (string)namedProperty.Value;
+        //                    attributeConstructionInfo.Properties[namedProperty.Key] = ResolveAndBind(value, bindingData);
+        //                }
+        //            }
+        //        }
 
-                // construct the attribute
-                Attribute resolvedAttribute = (Attribute)attributeConstructionInfo.Constructor.Invoke(attributeConstructionInfo.ConstructorArgs);
+        //        // construct the attribute
+        //        Attribute resolvedAttribute = (Attribute)attributeConstructionInfo.Constructor.Invoke(attributeConstructionInfo.ConstructorArgs);
 
-                // apply any named property values
-                foreach (var namedProperty in attributeConstructionInfo.Properties)
-                {
-                    namedProperty.Key.SetValue(resolvedAttribute, namedProperty.Value);
-                }
+        //        // apply any named property values
+        //        foreach (var namedProperty in attributeConstructionInfo.Properties)
+        //        {
+        //            namedProperty.Key.SetValue(resolvedAttribute, namedProperty.Value);
+        //        }
 
-                resolvedAttributes.Add(resolvedAttribute);
-            }
+        //        resolvedAttributes.Add(resolvedAttribute);
+        //    }
 
-            return resolvedAttributes;
-        }
+        //    return resolvedAttributes;
+        //}
 
         // TEMP - This code will go away when the Invoker work is done
-        private string ResolveAndBind(string value, IReadOnlyDictionary<string, string> bindingData)
-        {
-            BindingTemplate template = BindingTemplate.FromString(value);
+        //private string ResolveAndBind(string value, IReadOnlyDictionary<string, string> bindingData)
+        //{
+        //    BindingTemplate template = BindingTemplate.FromString(value);
 
-            string boundValue = value;
-            if (bindingData != null)
-            {
-                if (template != null)
-                {
-                    boundValue = template.Bind(bindingData);
-                }
-            }
+        //    string boundValue = value;
+        //    if (bindingData != null)
+        //    {
+        //        if (template != null)
+        //        {
+        //            boundValue = template.Bind(bindingData);
+        //        }
+        //    }
 
-            if (!string.IsNullOrEmpty(value))
-            {
-                boundValue = Resolve(boundValue);
-            }
+        //    if (!string.IsNullOrEmpty(value))
+        //    {
+        //        boundValue = Resolve(boundValue);
+        //    }
 
-            return boundValue;
-        }
-
-        internal class AttributeBuilderInfo
-        {
-            public ConstructorInfo Constructor { get; set; }
-            public object[] ConstructorArgs { get; set; }
-            public IDictionary<PropertyInfo, object> Properties { get; set; }
-        }
+        //    return boundValue;
+        //}
 
         internal static CustomAttributeBuilder GetAttributeBuilder(Attribute attribute)
         {
@@ -259,6 +252,13 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
 
             return attributeData;
+        }
+
+        internal class AttributeBuilderInfo
+        {
+            public ConstructorInfo Constructor { get; set; }
+            public object[] ConstructorArgs { get; set; }
+            public IDictionary<PropertyInfo, object> Properties { get; set; }
         }
     }
 }
