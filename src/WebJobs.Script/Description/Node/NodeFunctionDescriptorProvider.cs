@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             IEnumerable<FunctionBinding> bindings = inputBindings
                 .Where(b => !b.Metadata.IsTrigger)
-                .Union(outputBindings.Where(b => b.Metadata.Type != BindingType.Http));
+                .Union(outputBindings.Where(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) != 0));
 
             foreach (var binding in bindings)
             {

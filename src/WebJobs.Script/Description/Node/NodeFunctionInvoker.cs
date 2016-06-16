@@ -204,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             // Special hadling of HTTP bindings.
             // If we have an HTTP output binding, create an argument for it (as it is not provided by the SDK)
-            FunctionBinding httpOutputBinding = _outputBindings.FirstOrDefault(b => b.Metadata.Type == BindingType.Http);
+            FunctionBinding httpOutputBinding = _outputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) == 0);
             if (httpOutputBinding != null)
             {
                 context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));

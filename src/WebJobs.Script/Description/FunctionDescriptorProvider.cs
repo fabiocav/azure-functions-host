@@ -107,20 +107,25 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return parameters;
         }
 
-        protected virtual ParameterDescriptor CreateTriggerParameter(BindingMetadata triggerMetadata, Type parameterType = null)
+        protected virtual ParameterDescriptor CreateTriggerParameter(FunctionBinding triggerBinding, Type parameterType = null)
         {
             ParameterDescriptor triggerParameter = null;
-            string type = triggerMetadata.Type.ToLowerInvariant();
+            string type = triggerBinding.Metadata.Type.ToLowerInvariant();
             switch (type)
             {
                 case "httptrigger":
-                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerMetadata, parameterType ?? typeof(HttpRequestMessage));
+                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerBinding.Metadata, parameterType ?? typeof(HttpRequestMessage));
                     break;
                 case "manualtrigger":
-                    triggerParameter = ParseManualTrigger(triggerMetadata, parameterType ?? typeof(string));
+                    triggerParameter = ParseManualTrigger(triggerBinding.Metadata, parameterType ?? typeof(string));
                     break;
                 default:
-                    TryParseTriggerParameter(triggerMetadata.Raw, out triggerParameter, parameterType);
+                    if (triggerBinding.Metadata.Raw == null)
+                    {
+                        // TEMP: This conversion is only here to keep unit tests passing
+                        triggerBinding.Metadata.Raw = JObject.FromObject(triggerBinding);
+                    }
+                    TryParseTriggerParameter(triggerBinding.Metadata.Raw, out triggerParameter, parameterType);
                     break;
             }
 
