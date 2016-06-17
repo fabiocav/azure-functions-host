@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 // any required conversions and setup the context
                 if (converter != null)
                 {
-                    object input = await converter?.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
+                    object input = await converter.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
 
                     bindings.Add(argument.Binding.Metadata.Name, input);
                     convertedInputs.Add(input);
