@@ -18,8 +18,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public Task<object> ConvertFromValueAsync(Type argumentType, object value, DataType valueType, FunctionBinding binding, InvocationContext context)
         {
-            // If this was a byte[], just return the value; otherwise, we'll return the IAsyncCollector instance
-            // with the added value
             return Task.FromResult(value);
         }
 
