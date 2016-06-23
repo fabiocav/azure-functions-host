@@ -30,13 +30,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         }
 
         public string TableName { get; private set; }
-
         public string PartitionKey { get; private set; }
-
         public string RowKey { get; private set; }
-
         public int Take { get; private set; }
-
         public string Filter { get; private set; }
 
         public override Type GetArgumentType()
