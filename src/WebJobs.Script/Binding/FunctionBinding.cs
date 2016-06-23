@@ -93,7 +93,12 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                             break;
                         default:
                             FunctionBinding binding = null;
-                            if (TryParseFunctionBinding(config, bindingMetadata.Raw, out binding))
+                            if (bindingMetadata.Raw == null)
+                            {
+                                // TEMP: This conversion is only here to keep unit tests passing
+                                bindingMetadata.Raw = JObject.FromObject(bindingMetadata);
+                            }
+                            if (TryParseFunctionBinding(config, bindingMetadata, out binding))
                             {
                                 bindings.Add(binding);
                             }
@@ -105,11 +110,11 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             return bindings;
         }
 
-        private static bool TryParseFunctionBinding(ScriptHostConfiguration config, Newtonsoft.Json.Linq.JObject metadata, out FunctionBinding functionBinding)
+        private static bool TryParseFunctionBinding(ScriptHostConfiguration config, BindingMetadata metadata, out FunctionBinding functionBinding)
         {
             functionBinding = null;            
 
-            ScriptBindingContext bindingContext = new ScriptBindingContext(metadata);
+            ScriptBindingContext bindingContext = new ScriptBindingContext(metadata.Raw);
             ScriptBinding scriptBinding = null;
             foreach (var provider in config.BindingProviders)
             {
@@ -124,20 +129,21 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 return false;
             }
 
-            BindingMetadata bindingMetadata = BindingMetadata.Create(metadata);
-            functionBinding = new ExtensionBinding(config, scriptBinding, bindingMetadata);
+            functionBinding = new ExtensionBinding(config, scriptBinding, metadata);
 
             return true;
         }
 
-        protected string ResolveAndBind(string value, IReadOnlyDictionary<string, string> bindingData)
+        protected string ResolveBindingTemplate(string value, BindingTemplate bindingTemplate, IReadOnlyDictionary<string, string> bindingData)
         {
-            BindingTemplate template = BindingTemplate.FromString(value);
-
             string boundValue = value;
-            if (bindingData != null && template != null)
+
+            if (bindingData != null)
             {
-                boundValue = template.Bind(bindingData);
+                if (bindingTemplate != null)
+                {
+                    boundValue = bindingTemplate.Bind(bindingData);
+                }
             }
 
             if (!string.IsNullOrEmpty(value))

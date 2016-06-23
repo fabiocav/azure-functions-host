@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                     if (triggerBinding.Metadata.Raw == null)
                     {
                         // TEMP: This conversion is only here to keep unit tests passing
-                        triggerBinding.Metadata.Raw = JObject.FromObject(triggerBinding);
+                        triggerBinding.Metadata.Raw = JObject.FromObject(triggerBinding.Metadata);
                     }
                     TryParseTriggerParameter(triggerBinding.Metadata.Raw, out triggerParameter, parameterType);
                     break;
