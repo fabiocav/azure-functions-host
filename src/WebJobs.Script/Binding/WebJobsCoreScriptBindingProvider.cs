@@ -61,6 +61,10 @@ namespace Microsoft.Azure.WebJobs.Script
             {
                 binding = new BlobScriptBinding(context);
             }
+            else if (string.Compare(context.Type, "manualTrigger", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                binding = new ManualScriptBinding(context);
+            }
 
             return binding != null;
         }
@@ -146,6 +150,26 @@ namespace Microsoft.Azure.WebJobs.Script
                 }
 
                 return attributes;
+            }
+        }
+
+        private class ManualScriptBinding : ScriptBinding
+        {
+            public ManualScriptBinding(ScriptBindingContext context) : base(context)
+            {
+            }
+
+            public override Type DefaultType
+            {
+                get
+                {
+                    return null;
+                }
+            }
+
+            public override Collection<Attribute> GetAttributes()
+            {
+                return new Collection<Attribute>();
             }
         }
     }

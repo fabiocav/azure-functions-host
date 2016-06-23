@@ -44,6 +44,11 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             return attributeBuilders;
         }
 
+        public override Type GetArgumentType()
+        {
+            return _binding.DefaultType;
+        }
+
         internal static CustomAttributeBuilder GetAttributeBuilder(Attribute attribute)
         {
             AttributeBuilderInfo constructionInfo = GetAttributeBuilderInfo(attribute);
