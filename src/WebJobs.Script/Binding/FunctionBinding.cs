@@ -134,36 +134,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             return true;
         }
 
-        protected string ResolveBindingTemplate(string value, BindingTemplate bindingTemplate, IReadOnlyDictionary<string, string> bindingData)
-        {
-            string boundValue = value;
-
-            if (bindingData != null)
-            {
-                if (bindingTemplate != null)
-                {
-                    boundValue = bindingTemplate.Bind(bindingData);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(value))
-            {
-                boundValue = Resolve(boundValue);
-            }
-
-            return boundValue;
-        }
-
-        protected string Resolve(string name)
-        {
-            if (_config.HostConfig.NameResolver == null)
-            {
-                return name;
-            }
-
-            return _config.HostConfig.NameResolver.ResolveWholeString(name);
-        }
-
         internal static void AddStorageAccountAttribute(Collection<CustomAttributeBuilder> attributes, string connection)
         {
             var constructorTypes = new Type[] { typeof(string) };
