@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         public bool CanConvert(Type argumentType, DataType functionDataType)
         {
             bool isSupported = false;
-            if (argumentType == typeof(Stream))
+            if (typeof(Stream).IsAssignableFrom(argumentType))
             {
                 isSupported = SupportedDataTypes.Contains(functionDataType);
             }
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         {
             ValidateConversion(valueType, argumentType);
 
+            
             return null;
         }
 

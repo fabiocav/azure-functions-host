@@ -4,13 +4,14 @@
             "type": "queueTrigger",
             "name": "input",
             "direction": "in",
+            "dataType": "object",
             "queueName": "test-input-node"
         },
         {
             "type": "blob",
             "name": "output",
             "direction": "out",
-            "path": "test-output-node/{id}"
+            "path": "test-output-node/{Id}"
         }
     ]
 }

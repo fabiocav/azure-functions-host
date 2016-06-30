@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 {
                     if (bindingArguments[i].Binding.Metadata.Direction == BindingDirection.Out)
                     {
-                        parameters[i] = bindingArguments[i].Value;
+                        parameters[i + 3] = bindingArguments[i].Value;
                     }
                 }
 

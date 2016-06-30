@@ -162,6 +162,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 }
 
                 Type triggerParameterType = parameterType ?? binding.DefaultType;
+
+                if (binding.Context.DataType == "object")
+                {
+                    triggerParameterType = typeof(JObject);
+                }
+
                 parameterDescriptor = new ParameterDescriptor(bindingContext.Name, triggerParameterType, attributeBuilders);
 
                 return true;

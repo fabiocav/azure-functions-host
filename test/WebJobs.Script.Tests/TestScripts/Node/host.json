@@ -1,3 +1,4 @@
 ﻿{
+  "functions": [ "QueueTriggerToBlob" ],
   "id": "function-tests-node"
 }
