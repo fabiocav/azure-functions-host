@@ -20,11 +20,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 {
     public abstract class FunctionBinding
     {
-        private readonly ScriptHostConfiguration _config;
-
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "config")]
         protected FunctionBinding(ScriptHostConfiguration config, BindingMetadata metadata, FileAccess access)
         {
-            _config = config;
             Access = access;
             Metadata = metadata;
         }

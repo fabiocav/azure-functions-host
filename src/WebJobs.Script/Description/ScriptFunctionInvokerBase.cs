@@ -19,6 +19,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     [CLSCompliant(false)]
     public class ScriptFunctionInvokerBase : FunctionInvokerBase
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
         private readonly List<IBindingArgumentConverter> _argumentConverters;
 
         public ScriptFunctionInvokerBase(ScriptHost host, FunctionMetadata functionMetadata) : base(host, functionMetadata)
@@ -101,103 +102,103 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
         }
 
-        private async Task ProcessInputParametersAsync(InvocationContext context, string functionInstanceOutputPath)
-        {
-            IDictionary<string, string> environmentVariables = context.ExecutionContext["environmentVariables"] as IDictionary<string, string>;
+        //private async Task ProcessInputParametersAsync(InvocationContext context, string functionInstanceOutputPath)
+        //{
+        //    IDictionary<string, string> environmentVariables = context.ExecutionContext["environmentVariables"] as IDictionary<string, string>;
 
-            if (environmentVariables == null)
-            {
-                environmentVariables = new Dictionary<string, string>();
-                context.ExecutionContext["environmentVariables"] = environmentVariables;
-            }
+        //    if (environmentVariables == null)
+        //    {
+        //        environmentVariables = new Dictionary<string, string>();
+        //        context.ExecutionContext["environmentVariables"] = environmentVariables;
+        //    }
 
-            foreach (var argument in context.BindingArguments.Where(b => b.Binding.Metadata.Direction == BindingDirection.In))
-            {
-                string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
-                using (FileStream stream = File.OpenWrite(filePath))
-                {
-                    DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
-                    IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argument.Value.GetType(), dataType));
+        //    foreach (var argument in context.BindingArguments.Where(b => b.Binding.Metadata.Direction == BindingDirection.In))
+        //    {
+        //        string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+        //        using (FileStream stream = File.OpenWrite(filePath))
+        //        {
+        //            DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+        //            IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argument.Value.GetType(), dataType));
                     
-                    if (converter != null)
-                    {
-                        object input = await converter.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
+        //            if (converter != null)
+        //            {
+        //                object input = await converter.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
 
-                        if (input is string)
-                        {
-                            using (StreamWriter sw = new StreamWriter(stream))
-                            {
-                                await sw.WriteAsync((string)input);
-                            }
-                        }
-                        else if (input is byte[])
-                        {
-                            byte[] bytes = input as byte[];
-                            await stream.WriteAsync(bytes, 0, bytes.Length);
-                        }
-                        else if (input is Stream)
-                        {
-                            Stream inputStream = input as Stream;
-                            await inputStream.CopyToAsync(stream);
-                        }
+        //                if (input is string)
+        //                {
+        //                    using (StreamWriter sw = new StreamWriter(stream))
+        //                    {
+        //                        await sw.WriteAsync((string)input);
+        //                    }
+        //                }
+        //                else if (input is byte[])
+        //                {
+        //                    byte[] bytes = input as byte[];
+        //                    await stream.WriteAsync(bytes, 0, bytes.Length);
+        //                }
+        //                else if (input is Stream)
+        //                {
+        //                    Stream inputStream = input as Stream;
+        //                    await inputStream.CopyToAsync(stream);
+        //                }
 
-                        environmentVariables[argument.Binding.Metadata.Name] = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
-                    }
-                }
-            }
-        }
+        //                environmentVariables[argument.Binding.Metadata.Name] = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+        //            }
+        //        }
+        //    }
+        //}
 
-        private async Task ProcessFunctionOutputAsync(InvocationContext context, ICollection<FunctionBinding> outputBindings, string functionInstanceOutputPath)
-        {
-            var bindings = (Dictionary<string, object>)context.ExecutionContext["bindings"];
+        //private async Task ProcessFunctionOutputAsync(InvocationContext context, ICollection<FunctionBinding> outputBindings, string functionInstanceOutputPath)
+        //{
+        //    var bindings = (Dictionary<string, object>)context.ExecutionContext["bindings"];
 
-            // Special hadling of HTTP bindings.
-            // If we have an HTTP output binding, create an argument for it (as it is not provided by the SDK)
-            FunctionBinding httpOutputBinding = outputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) == 0);
-            if (httpOutputBinding != null)
-            {
-                context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));
-            }
+        //    // Special hadling of HTTP bindings.
+        //    // If we have an HTTP output binding, create an argument for it (as it is not provided by the SDK)
+        //    FunctionBinding httpOutputBinding = outputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) == 0);
+        //    if (httpOutputBinding != null)
+        //    {
+        //        context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));
+        //    }
 
-            foreach (var argument in context.BindingArguments.Where(a => a.Binding.Metadata.Direction == BindingDirection.Out))
-            {
-                string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
-                if (File.Exists(filePath))
-                {
-                    using (FileStream stream = File.OpenRead(filePath))
-                    {
-                        object output;
-                        bindings.TryGetValue(argument.Binding.Metadata.Name, out output);
+        //    foreach (var argument in context.BindingArguments.Where(a => a.Binding.Metadata.Direction == BindingDirection.Out))
+        //    {
+        //        string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+        //        if (File.Exists(filePath))
+        //        {
+        //            using (FileStream stream = File.OpenRead(filePath))
+        //            {
+        //                object output;
+        //                bindings.TryGetValue(argument.Binding.Metadata.Name, out output);
 
-                        Type argumentType = argument.Value?.GetType() ?? argument.Binding.GetArgumentType();
-                        DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
-                        IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argumentType, dataType));
+        //                Type argumentType = argument.Value?.GetType() ?? argument.Binding.GetArgumentType();
+        //                DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+        //                IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argumentType, dataType));
 
-                        if (converter != null)
-                        {
-                            object convertedOutput = await converter.ConvertFromValueAsync(argumentType, output, dataType, argument.Binding, context);
+        //                if (converter != null)
+        //                {
+        //                    object convertedOutput = await converter.ConvertFromValueAsync(argumentType, output, dataType, argument.Binding, context);
 
-                            if (convertedOutput != null)
-                            {
-                                Type outputType = convertedOutput.GetType();
-                                Type inputType = argument.Value?.GetType();
-                                var asyncCollectorType = typeof(IAsyncCollector<>).MakeGenericType(outputType);
-                                if (asyncCollectorType.IsAssignableFrom(inputType))
-                                {
-                                    MethodInfo addMethod = argumentType.GetMethod(nameof(IAsyncCollector<object>.AddAsync), new[] { outputType, typeof(CancellationToken) });
-                                    Task addAsyncTask = (Task)addMethod.Invoke(argument.Value, new[] { convertedOutput, CancellationToken.None });
-                                    await addAsyncTask;
-                                }
-                                else
-                                {
-                                    argument.Value = convertedOutput;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                    if (convertedOutput != null)
+        //                    {
+        //                        Type outputType = convertedOutput.GetType();
+        //                        Type inputType = argument.Value?.GetType();
+        //                        var asyncCollectorType = typeof(IAsyncCollector<>).MakeGenericType(outputType);
+        //                        if (asyncCollectorType.IsAssignableFrom(inputType))
+        //                        {
+        //                            MethodInfo addMethod = argumentType.GetMethod(nameof(IAsyncCollector<object>.AddAsync), new[] { outputType, typeof(CancellationToken) });
+        //                            Task addAsyncTask = (Task)addMethod.Invoke(argument.Value, new[] { convertedOutput, CancellationToken.None });
+        //                            await addAsyncTask;
+        //                        }
+        //                        else
+        //                        {
+        //                            argument.Value = convertedOutput;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
 
         protected static async Task ProcessOutputBindingsAsync(string functionInstanceOutputPath, Collection<FunctionBinding> outputBindings,
             object input, IBinderEx binder, Dictionary<string, string> bindingData)
