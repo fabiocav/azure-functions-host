@@ -8,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Binding;
@@ -17,8 +19,19 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     [CLSCompliant(false)]
     public class ScriptFunctionInvokerBase : FunctionInvokerBase
     {
+        private readonly List<IBindingArgumentConverter> _argumentConverters;
+
         public ScriptFunctionInvokerBase(ScriptHost host, FunctionMetadata functionMetadata) : base(host, functionMetadata)
         {
+            // This needs to be moved. Here to prototype the invoker changes
+            _argumentConverters = new List<IBindingArgumentConverter>
+            {
+                new StreamBindingArgumentConverter(),
+                new HttpBindingArgumentConverter(),
+                new JObjectBindingArgumentConverter(),
+                new SimpleBindingArgumentConverter(),
+                new TimerInfoBindingArgumentConverter()
+            };
         }
 
         public override Task Invoke(object[] parameters)
@@ -85,6 +98,104 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
                 environmentVariables[inputBinding.Metadata.Name] = Path.Combine(functionInstanceOutputPath,
                     inputBinding.Metadata.Name);
+            }
+        }
+
+        private async Task ProcessInputParametersAsync(InvocationContext context, string functionInstanceOutputPath)
+        {
+            IDictionary<string, string> environmentVariables = context.ExecutionContext["environmentVariables"] as IDictionary<string, string>;
+
+            if (environmentVariables == null)
+            {
+                environmentVariables = new Dictionary<string, string>();
+                context.ExecutionContext["environmentVariables"] = environmentVariables;
+            }
+
+            foreach (var argument in context.BindingArguments.Where(b => b.Binding.Metadata.Direction == BindingDirection.In))
+            {
+                string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+                using (FileStream stream = File.OpenWrite(filePath))
+                {
+                    DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+                    IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argument.Value.GetType(), dataType));
+                    
+                    if (converter != null)
+                    {
+                        object input = await converter.ConvertToValueAsync(dataType, argument.Value, argument.Binding, context);
+
+                        if (input is string)
+                        {
+                            using (StreamWriter sw = new StreamWriter(stream))
+                            {
+                                await sw.WriteAsync((string)input);
+                            }
+                        }
+                        else if (input is byte[])
+                        {
+                            byte[] bytes = input as byte[];
+                            await stream.WriteAsync(bytes, 0, bytes.Length);
+                        }
+                        else if (input is Stream)
+                        {
+                            Stream inputStream = input as Stream;
+                            await inputStream.CopyToAsync(stream);
+                        }
+
+                        environmentVariables[argument.Binding.Metadata.Name] = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+                    }
+                }
+            }
+        }
+
+        private async Task ProcessFunctionOutputAsync(InvocationContext context, ICollection<FunctionBinding> outputBindings, string functionInstanceOutputPath)
+        {
+            var bindings = (Dictionary<string, object>)context.ExecutionContext["bindings"];
+
+            // Special hadling of HTTP bindings.
+            // If we have an HTTP output binding, create an argument for it (as it is not provided by the SDK)
+            FunctionBinding httpOutputBinding = outputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) == 0);
+            if (httpOutputBinding != null)
+            {
+                context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));
+            }
+
+            foreach (var argument in context.BindingArguments.Where(a => a.Binding.Metadata.Direction == BindingDirection.Out))
+            {
+                string filePath = Path.Combine(functionInstanceOutputPath, argument.Binding.Metadata.Name);
+                if (File.Exists(filePath))
+                {
+                    using (FileStream stream = File.OpenRead(filePath))
+                    {
+                        object output;
+                        bindings.TryGetValue(argument.Binding.Metadata.Name, out output);
+
+                        Type argumentType = argument.Value?.GetType() ?? argument.Binding.GetArgumentType();
+                        DataType dataType = argument.Binding.Metadata.DataType ?? DataType.String;
+                        IBindingArgumentConverter converter = _argumentConverters.FirstOrDefault(c => c.CanConvert(argumentType, dataType));
+
+                        if (converter != null)
+                        {
+                            object convertedOutput = await converter.ConvertFromValueAsync(argumentType, output, dataType, argument.Binding, context);
+
+                            if (convertedOutput != null)
+                            {
+                                Type outputType = convertedOutput.GetType();
+                                Type inputType = argument.Value?.GetType();
+                                var asyncCollectorType = typeof(IAsyncCollector<>).MakeGenericType(outputType);
+                                if (asyncCollectorType.IsAssignableFrom(inputType))
+                                {
+                                    MethodInfo addMethod = argumentType.GetMethod(nameof(IAsyncCollector<object>.AddAsync), new[] { outputType, typeof(CancellationToken) });
+                                    Task addAsyncTask = (Task)addMethod.Invoke(argument.Value, new[] { convertedOutput, CancellationToken.None });
+                                    await addAsyncTask;
+                                }
+                                else
+                                {
+                                    argument.Value = convertedOutput;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
