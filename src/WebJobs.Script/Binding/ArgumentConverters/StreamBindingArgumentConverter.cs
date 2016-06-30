@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Description;
 
@@ -23,12 +24,45 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             return isSupported;
         }
 
-        public Task<object> ConvertFromValueAsync(Type argumentType, object value, DataType valueType, FunctionBinding binding, InvocationContext context)
+        public async Task<object> ConvertFromValueAsync(Type argumentType, object value, DataType valueType, FunctionBinding binding, InvocationContext context)
         {
             ValidateConversion(valueType, argumentType);
 
+            Stream inputStream = context.BindingArguments
+                .Where(b => string.Compare(b.Binding.Metadata.Name, binding.Metadata.Name) == 0)
+                .FirstOrDefault()?.Value as Stream;
             
-            return null;
+            // If the target is a stream but one wasn't provided, create a new one
+            inputStream = inputStream ?? new MemoryStream();
+
+            Stream valueStream = value as Stream;
+            if (valueStream == null)
+            {
+                // Convert the value to bytes and write it
+                // to the stream
+                byte[] bytes = null;
+                Type type = value.GetType();
+                if (type == typeof(byte[]))
+                {
+                    bytes = (byte[])value;
+                }
+                else if (type == typeof(string))
+                {
+                    bytes = Encoding.UTF8.GetBytes((string)value);
+                }
+
+                using (valueStream = new MemoryStream(bytes))
+                {
+                    await valueStream.CopyToAsync(inputStream);
+                }
+            }
+            else
+            {
+                // value is already a stream, so copy it directly
+                await valueStream.CopyToAsync(inputStream);
+            }
+
+            return inputStream;
         }
 
         public async Task<T> ConvertFromValueAsync<T>(object value, DataType valueType, FunctionBinding binding, InvocationContext context)
