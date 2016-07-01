@@ -13,13 +13,21 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     public sealed class BindingArgument
     {
         public BindingArgument(FunctionBinding binding, object value)
+            : this(binding, value, true)
+        {
+        }
+
+        public BindingArgument(FunctionBinding binding, object value, bool hasInvocationArgument)
         {
             Binding = binding;
             Value = value;
+            HasInvocationArgument = hasInvocationArgument;
         }
 
         public object Value { get; set; }
 
         public FunctionBinding Binding { get; }
+
+        public bool HasInvocationArgument { get; }
     }
 }

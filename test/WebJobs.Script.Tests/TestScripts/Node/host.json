@@ -1,4 +1,4 @@
 ﻿{
-  "functions": [ "QueueTriggerToBlob" ],
+  "functions": [ "HttpTrigger" ],
   "id": "function-tests-node"
 }

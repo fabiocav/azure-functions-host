@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Description;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Script.Binding
@@ -40,9 +41,21 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public Task<object> ConvertToValueAsync(DataType valueType, object argument, FunctionBinding binding, InvocationContext context)
         {
-            // Currently, this converter just returns the raw value. We need to enhance this to give script
-            // invokers the ability to write to a file or input
-            return Task.FromResult(argument);
+            object result = argument;
+            if (argument is JObject)
+            {
+                JObject jsonObject = (JObject)argument;
+                if (jsonObject.Type == JTokenType.Array)
+                {
+                    result = jsonObject.ToObject<Dictionary<string, object>[]>();
+                }
+                else
+                {
+                    result = jsonObject.ToObject<Dictionary<string, object>>();
+                }
+            }
+
+            return Task.FromResult(result);
         }
     }
 }

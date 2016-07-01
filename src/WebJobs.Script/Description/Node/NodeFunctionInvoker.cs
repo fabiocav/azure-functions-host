@@ -145,7 +145,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
                 for (int i = 0; i < bindingArguments.Count; i++)
                 {
-                    if (bindingArguments[i].Binding.Metadata.Direction == BindingDirection.Out)
+                    BindingArgument argument = bindingArguments[i];
+                    if (argument.Binding.Metadata.Direction == BindingDirection.Out && argument.HasInvocationArgument)
                     {
                         parameters[i + 3] = bindingArguments[i].Value;
                     }
@@ -207,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             FunctionBinding httpOutputBinding = _outputBindings.FirstOrDefault(b => string.Compare(b.Metadata.Type, "http", StringComparison.OrdinalIgnoreCase) == 0);
             if (httpOutputBinding != null)
             {
-                context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null));
+                context.BindingArguments.Add(new BindingArgument(httpOutputBinding, null, false));
             }
 
             foreach (var argument in context.BindingArguments.Where(a => a.Binding.Metadata.Direction == BindingDirection.Out))
