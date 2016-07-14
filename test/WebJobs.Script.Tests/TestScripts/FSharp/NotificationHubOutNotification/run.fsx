@@ -13,6 +13,7 @@
 open System
 open System.Collections.Generic
 open Microsoft.Azure.NotificationHubs
+open System.Runtime.InteropServices
 
 
 let GetTemplateNotification(message: string) =
@@ -20,5 +21,5 @@ let GetTemplateNotification(message: string) =
     templateProperties.["message"] <- message
     new TemplateNotification(templateProperties)
 
-let Run(input: string, notification: byref<Notification>) =
+let Run(input: string, [<Out>] notification: byref<Notification>) =
     notification <- GetTemplateNotification(input)

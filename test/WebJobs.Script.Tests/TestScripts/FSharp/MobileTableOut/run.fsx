@@ -12,6 +12,7 @@
 
 open System
 open Microsoft.Azure.WebJobs.Host
+open System.Runtime.InteropServices
 
 type Item = 
     { mutable Id : string
@@ -21,7 +22,7 @@ type Item =
       // Mobile table properties
       mutable CreatedAt : DateTimeOffset  }
 
-let Run(input: string, item: byref<Item>, log: TraceWriter) =
+let Run(input: string, [<Out>] item: byref<Item>, log: TraceWriter) =
     let i =
         { Id = input
           Text = "Hello from F#!"
