@@ -86,10 +86,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Filters
                 // if there is a function specific key specified try to match against that
                 if (functionName != null)
                 {
-                    FunctionSecrets functionSecrets = secretManager.GetFunctionSecrets(functionName);
+                    Dictionary<string, string> functionSecrets = secretManager.GetFunctionSecrets(functionName);
                     if (functionSecrets != null &&
-                        !string.IsNullOrEmpty(functionSecrets.Key) &&
-                        SecretEqual(keyValue, functionSecrets.Key))
+                        functionSecrets.Values.Any(s => SecretEqual(keyValue, s)))
                     {
                         return AuthorizationLevel.Function;
                     }

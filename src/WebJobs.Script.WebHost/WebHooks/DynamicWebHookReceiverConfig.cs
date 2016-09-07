@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.WebHooks;
 
@@ -20,13 +22,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.WebHooks
             // "id" will be the function name
             // we ignore the "name" parameter since we only allow a function
             // to be mapped to a single receiver
-            FunctionSecrets secrets = _secretManager.GetFunctionSecrets(id);
-            if (secrets != null)
-            {
-                return Task.FromResult(secrets.Key);
-            }
-
-            return null;
+            string functionSecret = _secretManager.GetFunctionSecrets(id).Values.FirstOrDefault();
+            return Task.FromResult(functionSecret);
         }
     }
 }

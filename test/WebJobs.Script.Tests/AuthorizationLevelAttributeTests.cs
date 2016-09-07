@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         private readonly string testHostFunctionKeyValue = "xyz789";
         private HttpActionContext _actionContext;
         private HostSecrets _hostSecrets;
-        private FunctionSecrets _functionSecrets;
+        private Dictionary<string, string> _functionSecrets;
         private Mock<SecretManager> _mockSecretManager;
 
         public AuthorizationLevelAttributeTests()
@@ -40,9 +41,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 FunctionKey = testHostFunctionKeyValue
             };
             _mockSecretManager.Setup(p => p.GetHostSecrets()).Returns(_hostSecrets);
-            _functionSecrets = new FunctionSecrets
+            _functionSecrets = new Dictionary<string, string>
             {
-                Key = testFunctionKeyValue
+                { null,  testFunctionKeyValue }
             };
             _mockSecretManager.Setup(p => p.GetFunctionSecrets(It.IsAny<string>())).Returns(_functionSecrets);
             mockDependencyResolver.Setup(p => p.GetService(typeof(SecretManager))).Returns(_mockSecretManager.Object);

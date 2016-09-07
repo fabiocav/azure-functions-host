@@ -333,13 +333,19 @@
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Handlers\WebScriptHostHandler.cs" />
-    <Compile Include="HostSecrets.cs" />
+    <Compile Include="Security\PlainTextSecretValueManager.cs" />
+    <Compile Include="Security\HostSecrets.cs" />
+    <Compile Include="Security\ISecretValueManagerFactory.cs" />
+    <Compile Include="Security\ISecretValueManager.cs" />
     <Compile Include="Models\FunctionInvocation.cs" />
     <Compile Include="Models\FunctionMetrics.cs" />
     <Compile Include="Models\FunctionStatus.cs" />
     <Compile Include="Models\HostStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SecretManager.cs" />
+    <Compile Include="Security\Key.cs" />
+    <Compile Include="Security\DefaultSecretValueManagerFactory.cs" />
+    <Compile Include="Security\SecretCryptoAction.cs" />
+    <Compile Include="Security\SecretManager.cs" />
     <Compile Include="SuspendedSynchronizationContextScope.cs" />
     <Compile Include="WebHooks\DynamicWebHookReceiverConfig.cs" />
     <Compile Include="WebHooks\WebHookReceiverManager.cs" />
