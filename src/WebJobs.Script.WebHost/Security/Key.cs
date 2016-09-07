@@ -30,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         [JsonProperty(PropertyName = "encrypted")]
         public bool IsEncrypted { get; set; }
 
+        [JsonIgnore]
+        public bool PersistenceStateStale { get; set; }
+
         public bool Equals(Key other)
         {
             if (other == null)
