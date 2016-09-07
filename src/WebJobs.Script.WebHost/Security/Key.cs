@@ -13,5 +13,11 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         [JsonProperty(PropertyName = "value")]
         public string Value { get; set; }
+
+        [JsonProperty(PropertyName = "encrypted")]
+        public bool IsEncrypted { get; set; }
+
+        [JsonProperty(PropertyName = "keyId")]
+        public string KeyId { get; set; }
     }
 }

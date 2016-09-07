@@ -333,6 +333,7 @@
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Handlers\WebScriptHostHandler.cs" />
+    <Compile Include="Security\AesCryptoSecretValueManager.cs" />
     <Compile Include="Security\PlainTextSecretValueManager.cs" />
     <Compile Include="Security\HostSecrets.cs" />
     <Compile Include="Security\ISecretValueManagerFactory.cs" />
