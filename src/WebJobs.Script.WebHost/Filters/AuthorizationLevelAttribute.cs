@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Filters
             if (!string.IsNullOrEmpty(keyValue))
             {
                 // see if the key specified is the master key
-                HostSecrets hostSecrets = secretManager.GetHostSecrets();
+                HostSecretsInfo hostSecrets = secretManager.GetHostSecrets();
                 if (!string.IsNullOrEmpty(hostSecrets.MasterKey) &&
                     SecretEqual(keyValue, hostSecrets.MasterKey))
                 {
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Filters
                 }
 
                 // see if the key specified matches the host function key
-                if (!string.IsNullOrEmpty(hostSecrets.FunctionKey) &&
-                    SecretEqual(keyValue, hostSecrets.FunctionKey))
+                if (hostSecrets.FunctionKeys != null &&
+                    hostSecrets.FunctionKeys.Any(k => SecretEqual(keyValue, k.Value)))
                 {
                     return AuthorizationLevel.Function;
                 }

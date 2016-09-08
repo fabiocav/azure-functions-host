@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.WebHost;
-using Microsoft.Azure.WebJobs.Script.WebHost.Security;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests.Security
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
                 Environment.SetEnvironmentVariable(keyId, "3H0vEYkSMENnRFrsSDEpWrzig+Hu05RnyL3hNEkzv6Q=");
 
                 // Create our test input key
-                var testInputKey = new Key { Name = "Test", Value = "Test secret value", KeyId = keyId };
+                var testInputKey = new Key { Name = "Test", Value = "Test secret value", EncryptionKeyId = keyId };
 
                 // Encrypt the key
                 var resultKey = valueManager.WriteKeyValue(testInputKey);
@@ -64,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
                 string decryptedSecret = valueManager.ReadKeyValue(resultKey);
 
                 Assert.Equal(testInputKey.Value, decryptedSecret);
-                Assert.Equal(keyId, resultKey.KeyId);
+                Assert.Equal(keyId, resultKey.EncryptionKeyId);
             }
             finally
             {
@@ -96,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
             var valueManager = new AesCryptoSecretValueManager();
 
             // Create our test input key
-            var testInputKey = new Key { Name = "Test", Value = "Test secret value", KeyId = keyId };
+            var testInputKey = new Key { Name = "Test", Value = "Test secret value", EncryptionKeyId = keyId };
 
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => keyOperation(valueManager, testInputKey));
 

@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.WebJobs.Script.WebHost.Security
+namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
     public class AesCryptoSecretValueManager : ISecretValueManager
     {
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Security
             return new Key
             {
                 Name = key.Name,
-                KeyId = encryptionKeyData.Item2,
+                EncryptionKeyId = encryptionKeyData.Item2,
                 Value = encryptedValue,
                 IsEncrypted = true
             };
@@ -42,8 +42,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Security
 
         private static Tuple<byte[], string> GetEncryptionKey(Key key)
         {
-            string keyName = string.IsNullOrEmpty(key.KeyId) ? 
-                Environment.GetEnvironmentVariable(DefaultEncryptionKeyId) : key.KeyId;
+            string keyName = string.IsNullOrEmpty(key.EncryptionKeyId) ? 
+                Environment.GetEnvironmentVariable(DefaultEncryptionKeyId) : key.EncryptionKeyId;
 
             if (keyName == null)
             {

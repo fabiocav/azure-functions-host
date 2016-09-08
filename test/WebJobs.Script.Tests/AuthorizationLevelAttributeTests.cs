@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         private readonly string testFunctionKeyValue = "def456";
         private readonly string testHostFunctionKeyValue = "xyz789";
         private HttpActionContext _actionContext;
-        private HostSecrets _hostSecrets;
+        private HostSecretsInfo _hostSecrets;
         private Dictionary<string, string> _functionSecrets;
         private Mock<SecretManager> _mockSecretManager;
 
@@ -35,10 +35,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Mock<IDependencyResolver> mockDependencyResolver = new Mock<IDependencyResolver>(MockBehavior.Strict);
             httpConfig.DependencyResolver = mockDependencyResolver.Object;
             _mockSecretManager = new Mock<SecretManager>(MockBehavior.Strict);
-            _hostSecrets = new HostSecrets
+            _hostSecrets = new HostSecretsInfo
             {
                 MasterKey = testMasterKeyValue,
-                FunctionKey = testHostFunctionKeyValue
+                FunctionKeys = new Dictionary<string, string> { { string.Empty, testHostFunctionKeyValue } }
             };
             _mockSecretManager.Setup(p => p.GetHostSecrets()).Returns(_hostSecrets);
             _functionSecrets = new Dictionary<string, string>
