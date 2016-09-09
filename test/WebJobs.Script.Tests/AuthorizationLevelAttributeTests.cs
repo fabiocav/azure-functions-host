@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             _mockSecretManager.Setup(p => p.GetHostSecrets()).Returns(_hostSecrets);
             _functionSecrets = new Dictionary<string, string>
             {
-                { null,  testFunctionKeyValue }
+                { string.Empty,  testFunctionKeyValue }
             };
             _mockSecretManager.Setup(p => p.GetFunctionSecrets(It.IsAny<string>())).Returns(_functionSecrets);
             mockDependencyResolver.Setup(p => p.GetService(typeof(SecretManager))).Returns(_mockSecretManager.Object);
