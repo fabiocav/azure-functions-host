@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         private readonly string _secretsPath;
         private readonly ConcurrentDictionary<string, Dictionary<string, string>> _secretsMap = new ConcurrentDictionary<string, Dictionary<string, string>>();
         private readonly ScriptSecretReader _scriptSecretReader = new ScriptSecretReader();
-        private readonly ISecretValueManagerFactory _secretValueManagerFactory;
+        private readonly IKeyValueConverterFactory _keyValueConverterFactory;
         private readonly FileSystemWatcher _fileWatcher;
         private HostSecretsInfo _hostSecrets;
 
@@ -33,14 +33,14 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         }
 
         public SecretManager(string secretsPath)
-            : this(secretsPath, new DefaultSecretValueManagerFactory())
+            : this(secretsPath, new DefaultKeyValueConverterFactory())
         {
         }
 
-        public SecretManager(string secretsPath, ISecretValueManagerFactory secretValueManagerFactory)
+        public SecretManager(string secretsPath, IKeyValueConverterFactory keyValueConverterFactory)
         {
             _secretsPath = secretsPath;
-            _secretValueManagerFactory = secretValueManagerFactory;
+            _keyValueConverterFactory = keyValueConverterFactory;
 
             Directory.CreateDirectory(_secretsPath);
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 {
                     // load the secrets file
                     string secretsJson = File.ReadAllText(secretFilePath);
-                    hostSecrets = _scriptSecretReader.DeserializeHostSecrets(secretsJson);
+                    hostSecrets = _scriptSecretReader.ReadHostSecrets(secretsJson);
                 }
                 else
                 {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                         }
                     };
 
-                    string secretContent = _scriptSecretReader.SerializeHostSecrets(hostSecrets);
+                    string secretContent = _scriptSecretReader.WriteHostSecrets(hostSecrets);
                     File.WriteAllText(secretFilePath, secretContent);
                 }
 
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 {
                     // load the secrets file
                     string secretsJson = File.ReadAllText(secretFilePath);
-                    secrets = _scriptSecretReader.DeserializeFunctionSecrets(secretsJson);
+                    secrets = _scriptSecretReader.ReadFunctionSecrets(secretsJson);
                 }
                 else
                 {
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                         GenerateSecret(DefaultFunctionKeyName)
                     };
 
-                    string secretsContent = _scriptSecretReader.SerializeFunctionSecrets(secrets);
+                    string secretsContent = _scriptSecretReader.WriteFunctionSecrets(secrets);
                     File.WriteAllText(secretFilePath, secretsContent);
                 }
 
@@ -147,14 +147,14 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         private string ReadSecretValue(Key key)
         {
-            ISecretValueManager valueManager = _secretValueManagerFactory.GetValueManager(key, SecretCryptoAction.Read);
-            return valueManager.ReadKeyValue(key);
+            IKeyValueConverter converter = _keyValueConverterFactory.GetValueConverter(key, KeyConversionAction.Read);
+            return converter.ReadKeyValue(key);
         }
 
         private Key WriteSecretValue(Key key)
         {
-            ISecretValueManager valueManager = _secretValueManagerFactory.GetValueManager(key, SecretCryptoAction.Write);
-            return valueManager.WriteKeyValue(key);
+            IKeyValueConverter converter = _keyValueConverterFactory.GetValueConverter(key, KeyConversionAction.Write);
+            return converter.WriteKeyValue(key);
         }
 
         /// <summary>

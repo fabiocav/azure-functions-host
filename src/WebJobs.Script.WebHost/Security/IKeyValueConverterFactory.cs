@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public enum SecretCryptoAction
+    public interface IKeyValueConverterFactory
     {
-        Read,
-        Write
+        IKeyValueConverter GetValueConverter(Key key, KeyConversionAction action);
     }
 }

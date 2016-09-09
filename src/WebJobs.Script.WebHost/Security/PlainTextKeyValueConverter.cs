@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public sealed class PlainTextSecretValueManager : ISecretValueManager
+    public sealed class PlainTextKeyValueConverter : IKeyValueConverter
     {
         public string ReadKeyValue(Key key)
         {

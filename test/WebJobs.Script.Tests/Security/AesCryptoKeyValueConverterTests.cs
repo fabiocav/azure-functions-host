@@ -11,12 +11,12 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests.Security
 {
-    public class AesCryptoSecretValueManagerTests
+    public class AesCryptoKeyValueConverterTests
     {
         [Fact]
         public void ReadKeyValue_CanRead_WrittenKey()
         {
-            var valueManager = new AesCryptoSecretValueManager();
+            var converter = new AesCryptoKeyValueConverter();
 
             string keyId = Guid.NewGuid().ToString();
 
@@ -28,10 +28,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
                 var testInputKey = new Key { Name = "Test", Value = "Test secret value", EncryptionKeyId = keyId };
 
                 // Encrypt the key
-                var resultKey = valueManager.WriteKeyValue(testInputKey);
+                var resultKey = converter.WriteKeyValue(testInputKey);
 
                 // Decrypt the encrypted key
-                string decryptedSecret = valueManager.ReadKeyValue(resultKey);
+                string decryptedSecret = converter.ReadKeyValue(resultKey);
 
                 Assert.Equal(testInputKey.Value, decryptedSecret);
             }
@@ -44,23 +44,23 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
         [Fact]
         public void WriteKeyValue_WithUnspecifiedKeyId_UsesDefaultKey()
         {
-            var valueManager = new AesCryptoSecretValueManager();
+            var converter = new AesCryptoKeyValueConverter();
 
             string keyId = Guid.NewGuid().ToString();
 
             try
             {
-                Environment.SetEnvironmentVariable(AesCryptoSecretValueManager.DefaultEncryptionKeyId, keyId);
+                Environment.SetEnvironmentVariable(AesCryptoKeyValueConverter.DefaultEncryptionKeyId, keyId);
                 Environment.SetEnvironmentVariable(keyId, "3H0vEYkSMENnRFrsSDEpWrzig+Hu05RnyL3hNEkzv6Q=");
 
                 // Create our test input key
                 var testInputKey = new Key { Name = "Test", Value = "Test secret value" };
 
                 // Encrypt the key
-                var resultKey = valueManager.WriteKeyValue(testInputKey);
+                var resultKey = converter.WriteKeyValue(testInputKey);
 
                 // Decrypt the encrypted key
-                string decryptedSecret = valueManager.ReadKeyValue(resultKey);
+                string decryptedSecret = converter.ReadKeyValue(resultKey);
 
                 Assert.Equal(testInputKey.Value, decryptedSecret);
                 Assert.Equal(keyId, resultKey.EncryptionKeyId);
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
             finally
             {
                 Environment.SetEnvironmentVariable(keyId, null);
-                Environment.SetEnvironmentVariable(AesCryptoSecretValueManager.DefaultEncryptionKeyId, null);
+                Environment.SetEnvironmentVariable(AesCryptoKeyValueConverter.DefaultEncryptionKeyId, null);
             }
         }
 
@@ -90,14 +90,14 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
            TestKeyConfigurationException((m, k) => m.ReadKeyValue(k), "INVALID");
         }
 
-        private void TestKeyConfigurationException(Action<AesCryptoSecretValueManager, Key> keyOperation, string keyId = null)
+        private void TestKeyConfigurationException(Action<AesCryptoKeyValueConverter, Key> keyOperation, string keyId = null)
         {
-            var valueManager = new AesCryptoSecretValueManager();
+            var converter = new AesCryptoKeyValueConverter();
 
             // Create our test input key
             var testInputKey = new Key { Name = "Test", Value = "Test secret value", EncryptionKeyId = keyId };
 
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => keyOperation(valueManager, testInputKey));
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => keyOperation(converter, testInputKey));
 
             string message = null;
             if (!string.IsNullOrEmpty(keyId))

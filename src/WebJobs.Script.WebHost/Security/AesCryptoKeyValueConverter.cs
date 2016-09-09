@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public class AesCryptoSecretValueManager : ISecretValueManager
+    public class AesCryptoKeyValueConverter : IKeyValueConverter
     {
         internal const string DefaultEncryptionKeyId = "AzureWebJobsSecretEncryptionKeyId";
         private static ConcurrentDictionary<string, byte[]> _keys = new ConcurrentDictionary<string, byte[]>();

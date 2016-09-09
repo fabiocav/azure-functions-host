@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         private static IScriptSecretSerializer DefaultSerializer => GetSerializer(_secretFormatters.Max(i => i.SupportedFormatVersion));
 
-        public IList<Key> DeserializeFunctionSecrets(string secretsJson)
+        public IList<Key> ReadFunctionSecrets(string secretsJson)
         {
             var secretsObject = JObject.Parse(secretsJson);
 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             return serializer.DeserializeFunctionSecrets(secretsObject);
         }
 
-        public HostSecrets DeserializeHostSecrets(string secretsJson)
+        public HostSecrets ReadHostSecrets(string secretsJson)
         {
             var secrets = JObject.Parse(secretsJson);
 
@@ -37,9 +37,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             return serializer.DeserializeHostSecrets(secrets);
         }
 
-        public string SerializeFunctionSecrets(IList<Key> secrets) => DefaultSerializer.SerializeFunctionSecrets(secrets);
+        public string WriteFunctionSecrets(IList<Key> secrets) => DefaultSerializer.SerializeFunctionSecrets(secrets);
 
-        public string SerializeHostSecrets(HostSecrets secrets) => DefaultSerializer.SerializeHostSecrets(secrets);
+        public string WriteHostSecrets(HostSecrets secrets) => DefaultSerializer.SerializeHostSecrets(secrets);
 
         private static IScriptSecretSerializer GetSerializer(JObject secrets)
         {

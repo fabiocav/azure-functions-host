@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public interface ISecretValueManager
+    public enum KeyConversionAction
     {
-        string ReadKeyValue(Key key);
-
-        Key WriteKeyValue(Key key);
+        Read,
+        Write
     }
 }
