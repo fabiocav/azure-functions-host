@@ -44,8 +44,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
 
             Assert.Equal(1, jsonObject.Value<int>("version"));
             Assert.NotNull(serializedSecret);
-            Assert.Equal(secrets.Count, serializedSecrets.Count());
-            Assert.True(secrets.Zip(serializedSecrets, (k1, k2) => k1.Equals(k2)).All(r => r));
+            AssertKeyCollectionsEquality(secrets, serializedSecrets);
         }
 
         [Fact]
@@ -72,10 +71,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
             };
 
             IList<Key> actual = serializer.DeserializeFunctionSecrets(JObject.Parse(serializedSecret));
-
-            Assert.NotNull(actual);
-            Assert.Equal(expected.Count, actual.Count);
-            Assert.True(expected.Zip(actual, (k1, k2) => k1.Equals(k2)).All(r => r));
+            AssertKeyCollectionsEquality(expected, actual);
         }
 
         [Fact]
@@ -109,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
 
             Assert.NotNull(actual);
             Assert.Equal(expected.MasterKey, actual.MasterKey);
-            Assert.True(expected.FunctionKeys.Zip(actual.FunctionKeys, (k1, k2) => k1.Equals(k2)).All(r => r));
+            AssertKeyCollectionsEquality(expected.FunctionKeys, actual.FunctionKeys);
         }
 
         [Fact]
@@ -146,10 +142,16 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
             var masterKey = jsonObject.Property("masterKey")?.Value?.ToObject<Key>();
 
             Assert.Equal(1, jsonObject.Value<int>("version"));
-            Assert.Equal(secrets.MasterKey, masterKey);
             Assert.NotNull(serializedSecret);
-            Assert.Equal(secrets.FunctionKeys.Count, functionSecrets.Count());
-            Assert.True(secrets.FunctionKeys.Zip(functionSecrets, (k1, k2) => k1.Equals(k2)).All(r => r));
+            Assert.Equal(secrets.MasterKey, masterKey);
+            AssertKeyCollectionsEquality(secrets.FunctionKeys, functionSecrets);
+        }
+
+        private void AssertKeyCollectionsEquality(IList<Key> expected, IList<Key> actual)
+        {
+            Assert.NotNull(actual);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.True(expected.Zip(actual, (k1, k2) => k1.Equals(k2)).All(r => r));
         }
     }
 }
