@@ -26,11 +26,21 @@ namespace Microsoft.Azure.Web.Cryptography
 
         public CryptoService(IEncryptionKeyResolver keyResolver)
         {
+            if (keyResolver == null)
+            {
+                throw new ArgumentNullException(nameof(keyResolver));
+            }
+
             _keyResolver = keyResolver;
         }
 
         public EncryptionResult<string> EncryptValue(string value, string keyId = null)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             CryptographicKey cryptoKey = GetEncryptionKey(keyId);
 
             byte[] data = Encoding.UTF8.GetBytes(value);
@@ -42,6 +52,11 @@ namespace Microsoft.Azure.Web.Cryptography
 
         public EncryptionResult<byte[]> EncryptValue(byte[] value, string keyId = null)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             CryptographicKey cryptoKey = GetEncryptionKey(keyId);
             byte[] encryptedData = EncryptData(value, cryptoKey.GetValue());
 
@@ -50,6 +65,11 @@ namespace Microsoft.Azure.Web.Cryptography
 
         public byte[] DecryptValue(byte[] value, string keyId = null)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             CryptographicKey cryptoKey = GetEncryptionKey(keyId);
 
             return DecryptData(value, cryptoKey.GetValue());
@@ -57,6 +77,11 @@ namespace Microsoft.Azure.Web.Cryptography
 
         public string DecryptValue(string value, string keyId = null)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             byte[] encryptedData = Convert.FromBase64String(value);
             byte[] result = DecryptValue(encryptedData, keyId);
 
