@@ -8,9 +8,7 @@ namespace Microsoft.Azure.Web.Cryptography
     public static class Constants
     {
         public const string AzureWebsiteName = "WEBSITE_SITE_NAME";
-        public const string AzureWebsiteOwnerName = "WEBSITE_OWNER_NAME";
         public const string AzureWebsiteInstanceId = "WEBSITE_INSTANCE_ID";
-        public const string AzureWebsiteHomePath = "HOME";
         public const string AzureWebsiteEncryptionKey = "WEBSITE_AUTH_ENCRYPTION_KEY";
         public const string AzureWebsiteLocalEncryptionKey = "AzureWebEncryptionKey";
         public const string AzureWebsiteEncryptionKeyId = "AzureWebDefaultEncryptionKeyId";

@@ -15,13 +15,25 @@ namespace Microsoft.Azure.Web.Cryptography
     {
         public const string DefaultEncryptionKeyId = "default";
         private const string MachingKeyXPathFormat = "configuration/location[@path='{0}']/system.web/machineKey/@decryptionKey";
-        private static readonly string[] DefaultKeyIdMappings = new[] { DefaultEncryptionKeyId, Constants.AzureWebsiteEncryptionKey };
 
+        private static readonly string[] DefaultKeyIdMappings = new[] { DefaultEncryptionKeyId, Constants.AzureWebsiteEncryptionKey };
+        private readonly string _rootWebConfigPath;
         private CryptographicKey _defaultKey;
+
+        public DefaultEncryptionKeyResolver()
+            : this(Constants.RootWebConfigPath)
+        {
+
+        }
+
+        internal DefaultEncryptionKeyResolver(string configPath)
+        {
+            _rootWebConfigPath = configPath;
+        }
 
         public CryptographicKey ResolveKey(string keyId) => string.IsNullOrEmpty(keyId) ? GetCurrentKey() : GetNamedKey(keyId);
 
-        private static CryptographicKey GetNamedKey(string keyId)
+        private CryptographicKey GetNamedKey(string keyId)
         {
             string keyValue = IsDefaultKey(keyId) ? GetDefaultKeyValue() : Environment.GetEnvironmentVariable(keyId);
 
@@ -60,13 +72,13 @@ namespace Microsoft.Azure.Web.Cryptography
             return _defaultKey;
         }
 
-        private static string GetDefaultKeyValue()
+        private string GetDefaultKeyValue()
         {
             if (IsAzureEnvironment())
             {
                 // If running in Azure, try to pull the key from the environment
                 // and fallback to config file if not available
-                return Environment.GetEnvironmentVariable(Constants.AzureWebsiteEncryptionKey) ?? GetMachineConfigKey();
+                return Environment.GetEnvironmentVariable(Constants.AzureWebsiteEncryptionKey) ?? GetMachineConfigKey(_rootWebConfigPath);
             }
 
             return Environment.GetEnvironmentVariable(Constants.AzureWebsiteLocalEncryptionKey);
@@ -76,12 +88,12 @@ namespace Microsoft.Azure.Web.Cryptography
 
         private static bool IsDefaultKey(string keyName) => DefaultKeyIdMappings.Contains(keyName, StringComparer.OrdinalIgnoreCase);
 
-        private static string GetMachineConfigKey()
+        private static string GetMachineConfigKey(string configPath)
         {
             string key = null;
-            if (File.Exists(Constants.RootWebConfigPath))
+            if (File.Exists(configPath))
             {
-                using (var reader = new StringReader(File.ReadAllText(Constants.RootWebConfigPath)))
+                using (var reader = new StringReader(File.ReadAllText(configPath)))
                 {
                     var xdoc = XDocument.Load(reader);
 
