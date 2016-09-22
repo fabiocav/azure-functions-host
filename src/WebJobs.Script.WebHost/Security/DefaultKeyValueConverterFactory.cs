@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 return string.Equals(Environment.GetEnvironmentVariable("AzureWebJobsEncryptionEnabled"), "true", StringComparison.OrdinalIgnoreCase);
             }
 
-            return Environment.GetEnvironmentVariable(EnvironmentSettingNames.AzureWebJobsLocalEncryptionKey) != null;
+            return Environment.GetEnvironmentVariable(EnvironmentSettingNames.AzureWebLocalEncryptionKey) != null;
         }
 
         public IKeyValueReader GetValueReader(Key key)

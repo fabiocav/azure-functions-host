@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Security
 
             try
             {
-                Environment.SetEnvironmentVariable(keyId, "0F75CA46E7EBDD39E4CA6B074D1F9A5972B849A55F91A248");
+                Environment.SetEnvironmentVariable(EnvironmentSettingNames.AzureWebLocalEncryptionKey, "0F75CA46E7EBDD39E4CA6B074D1F9A5972B849A55F91A248");
 
                 // Create our test input key
                 var testInputKey = new Key { Name = "Test", Value = "Test secret value", EncryptionKeyId = keyId };

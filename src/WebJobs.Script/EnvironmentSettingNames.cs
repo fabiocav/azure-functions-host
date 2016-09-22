@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Script
         public const string AzureWebsiteHomePath = "HOME";
         public const string AzureWebsiteEncryptionKey = "WEBSITE_AUTH_ENCRYPTION_KEY";
         public const string AzureWebJobsScriptRoot = "AzureWebJobsScriptRoot";
-        public const string AzureWebJobsLocalEncryptionKey = "AzureWebJobsEncryptionKey";
+        public const string AzureWebLocalEncryptionKey = "AzureWebEncryptionKey";
         public const string AzureWebJobsDefaultEncryptionKeyId = "AzureWebJobsDefaultEncryptionKeyId";
     }
 }
