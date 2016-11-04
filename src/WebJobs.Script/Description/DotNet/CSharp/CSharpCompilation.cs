@@ -20,7 +20,7 @@ using Microsoft.CodeAnalysis.Scripting.Hosting;
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
     [CLSCompliant(false)]
-    public sealed class CSharpCompilation : ICompilation
+    public sealed class CSharpCompilation : DotNetCompilation
     {
         private readonly Compilation _compilation;
 
@@ -33,12 +33,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             _compilation = compilation;
         }
 
-        public ImmutableArray<Diagnostic> GetDiagnostics()
+        public override ImmutableArray<Diagnostic> GetDiagnostics()
         {
             return _compilation.WithAnalyzers(GetAnalyzers()).GetAllDiagnosticsAsync().Result;
         }
 
-        public FunctionSignature GetEntryPointSignature(IFunctionEntryPointResolver entryPointResolver)
+        public override FunctionSignature GetEntryPointSignature(IFunctionEntryPointResolver entryPointResolver)
         {
             if (!_compilation.SyntaxTrees.Any())
             {
@@ -81,29 +81,18 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 && namedTypeSymbol.TypeArguments.Any(t => IsOrUsesAssemblyType(t, assemblySymbol));
         }
 
-        public Assembly EmitAndLoad(CancellationToken cancellationToken)
+        public override void Emit(Stream assemblyStream, Stream pdbStream, CancellationToken cancellationToken)
         {
-            using (var assemblyStream = new MemoryStream())
+            var compilationWithAnalyzers = _compilation.WithAnalyzers(GetAnalyzers());
+            var diagnostics = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result;
+            cancellationToken.ThrowIfCancellationRequested();
+            var emitResult = compilationWithAnalyzers.Compilation.Emit(assemblyStream, pdbStream, cancellationToken: cancellationToken);
+
+            diagnostics = diagnostics.AddRange(emitResult.Diagnostics);
+
+            if (diagnostics.Any(di => di.Severity == DiagnosticSeverity.Error))
             {
-                using (var pdbStream = new MemoryStream())
-                {
-                    var compilationWithAnalyzers = _compilation.WithAnalyzers(GetAnalyzers());
-                    var diagnostics = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result;
-                    var emitResult = compilationWithAnalyzers.Compilation.Emit(assemblyStream, pdbStream, cancellationToken: cancellationToken);
-
-                    diagnostics = diagnostics.AddRange(emitResult.Diagnostics);
-
-                    if (diagnostics.Any(di => di.Severity == DiagnosticSeverity.Error))
-                    {
-                        throw new CompilationErrorException("Script compilation failed.", diagnostics);
-                    }
-
-                    // Check if cancellation was requested while we were compiling, 
-                    // and if so quit here. 
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    return Assembly.Load(assemblyStream.GetBuffer(), pdbStream.GetBuffer());
-                }
+                throw new CompilationErrorException("Script compilation failed.", diagnostics);
             }
         }
 
