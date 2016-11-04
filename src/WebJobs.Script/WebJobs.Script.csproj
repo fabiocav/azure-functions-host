@@ -352,7 +352,7 @@
     <Compile Include="Config\FeatureFlags.cs" />
     <Compile Include="Description\Binding\Cardinality.cs" />
     <Compile Include="Description\DiagnosticSeverityExtensions.cs" />
-    <Compile Include="Description\DotNet\CachedCompilation.cs" />
+    <Compile Include="Description\DotNet\CachedCompilationService.cs" />
     <Compile Include="Description\DotNet\DiagnosticExtensions.cs" />
     <Compile Include="Description\DotNet\CSharp\Analyzers\InvalidFileMetadataReferenceAnalyzer.cs" />
     <Compile Include="Description\DotNet\CSharp\CSharpCompilation.cs" />

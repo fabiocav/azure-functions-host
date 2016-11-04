@@ -49,12 +49,15 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
         public ICompilation GetFunctionCompilation(FunctionMetadata functionMetadata)
         {
-            string code = GetFunctionSource(functionMetadata);
-            Script<object> script = CSharpScript.Create(code, options: _metadataResolver.CreateScriptOptions(), assemblyLoader: AssemblyLoader.Value);
+            return new CachedCompilation(functionMetadata, () =>
+            {
+                string code = GetFunctionSource(functionMetadata);
+                Script<object> script = CSharpScript.Create(code, options: _metadataResolver.CreateScriptOptions(), assemblyLoader: AssemblyLoader.Value);
 
-            Compilation compilation = GetScriptCompilation(script, functionMetadata);
+                Compilation compilation = GetScriptCompilation(script, functionMetadata);
 
-            return new CSharpCompilation(compilation);
+                return new CSharpCompilation(compilation);
+            });
         }
 
         private static string GetFunctionSource(FunctionMetadata functionMetadata)
