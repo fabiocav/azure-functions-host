@@ -13,6 +13,8 @@ namespace Microsoft.Azure.WebJobs.Script
 {
     public static class Utility
     {
+        private static readonly string UTF8ByteOrderMark = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
+
         public static string GetSubscriptionId()
         {
             string ownerName = ScriptSettingsManager.Instance.GetSetting(EnvironmentSettingNames.AzureWebsiteOwnerName) ?? string.Empty;
@@ -162,12 +164,16 @@ namespace Microsoft.Azure.WebJobs.Script
             return input;
         }
 
+        public static bool IsUTF8WithByteOrderMark(string input)
+        {
+            return input != null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(input, UTF8ByteOrderMark, CompareOptions.Ordinal);
+        }
+
         public static string RemoveUtf8ByteOrderMark(string input)
         {
-            string byteOrderMark = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
-            if (input != null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(input, byteOrderMark, CompareOptions.Ordinal))
+            if (IsUTF8WithByteOrderMark(input))
             {
-                input = input.Substring(byteOrderMark.Length);
+                input = input.Substring(UTF8ByteOrderMark.Length);
             }
 
             return input;
