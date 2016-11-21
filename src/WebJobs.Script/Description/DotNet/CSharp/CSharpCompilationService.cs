@@ -52,8 +52,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             string code = GetFunctionSource(functionMetadata);
             Script<object> script = CSharpScript.Create(code, options: _metadataResolver.CreateScriptOptions(), assemblyLoader: AssemblyLoader.Value);
 
-            Encoding scriptEncoding = Utility.IsUTF8WithByteOrderMark(code) ? Encoding.UTF8 : UTF8WithNoBOM;
-            Compilation compilation = GetScriptCompilation(script, functionMetadata, scriptEncoding);
+            Compilation compilation = GetScriptCompilation(script, functionMetadata);
 
             return new CSharpCompilation(compilation);
         }
@@ -64,13 +63,14 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             if (File.Exists(functionMetadata.ScriptFile))
             {
-                code = File.ReadAllText(functionMetadata.ScriptFile);
+                var codeBytes = File.ReadAllBytes(functionMetadata.ScriptFile);
+                code = Encoding.UTF8.GetString(codeBytes);
             }
 
             return code ?? string.Empty;
         }
 
-        private Compilation GetScriptCompilation(Script<object> script, FunctionMetadata functionMetadata, Encoding encoding)
+        private Compilation GetScriptCompilation(Script<object> script, FunctionMetadata functionMetadata)
         {
             Compilation compilation = script.GetCompilation();
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             {
                 SyntaxTree scriptTree = compilation.SyntaxTrees.FirstOrDefault(t => string.IsNullOrEmpty(t.FilePath));
                 var debugTree = SyntaxFactory.SyntaxTree(scriptTree.GetRoot(),
-                  encoding: encoding,
+                  encoding: UTF8WithNoBOM,
                   path: Path.GetFileName(functionMetadata.ScriptFile),
                   options: new CSharpParseOptions(kind: SourceCodeKind.Script));
 
