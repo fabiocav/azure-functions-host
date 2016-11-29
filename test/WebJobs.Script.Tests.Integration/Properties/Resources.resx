@@ -148,4 +148,23 @@
 
 }</value>
   </data>
+  <data name="DotNetFunctionJson" xml:space="preserve">
+    <value>{
+    "scriptFile":"DotNetFunctionAssembly.dll",
+    "entryPoint": "TestFunction.Function.Run",
+    "bindings": [
+        {
+            "type": "httpTrigger",
+            "name": "req",
+            "direction": "in",
+            "methods": [ "get" ]
+        },
+        {
+            "type": "http",
+            "name": "$return",
+            "direction": "out"
+        }
+    ]
+}</value>
+  </data>
 </root>

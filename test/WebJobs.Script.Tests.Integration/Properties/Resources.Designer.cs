@@ -83,5 +83,30 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Properties {
                 return ResourceManager.GetString("AzureWebHookEventRequest", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///    &quot;scriptFile&quot;:&quot;DotNetFunctionAssembly.dll&quot;,
+        ///    &quot;entryPoint&quot;: &quot;TestFunction.Function.Run&quot;,
+        ///    &quot;bindings&quot;: [
+        ///        {
+        ///            &quot;type&quot;: &quot;httpTrigger&quot;,
+        ///            &quot;name&quot;: &quot;req&quot;,
+        ///            &quot;direction&quot;: &quot;in&quot;,
+        ///            &quot;methods&quot;: [ &quot;get&quot; ]
+        ///        },
+        ///        {
+        ///            &quot;type&quot;: &quot;http&quot;,
+        ///            &quot;name&quot;: &quot;$return&quot;,
+        ///            &quot;direction&quot;: &quot;out&quot;
+        ///        }
+        ///    ]
+        ///}.
+        /// </summary>
+        internal static string DotNetFunctionJson {
+            get {
+                return ResourceManager.GetString("DotNetFunctionJson", resourceCulture);
+            }
+        }
     }
 }
