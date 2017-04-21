@@ -8,7 +8,7 @@ using Microsoft.Azure.WebJobs.Script.Config;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public class WebHostSettings
+    public class WebHostEnvironmentSettings : ScriptHostEnvironmentSettings
     {
         /// <summary>
         /// Gets or sets a value indicating whether the host is running
@@ -16,10 +16,6 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         /// locally or via CLI.
         /// </summary>
         public bool IsSelfHost { get; set; }
-
-        public string ScriptPath { get; set; }
-
-        public string LogPath { get; set; }
 
         public string SecretsPath { get; set; }
 
@@ -29,11 +25,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         /// </summary>
         public bool IsAuthDisabled { get; set; } = false;
 
-        public TraceWriter TraceWriter { get; set; }
-
-        internal static WebHostSettings CreateDefault(ScriptSettingsManager settingsManager)
+        internal static WebHostEnvironmentSettings CreateDefault(ScriptSettingsManager settingsManager)
         {
-            WebHostSettings settings = new WebHostSettings
+            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings
             {
                 IsSelfHost = !settingsManager.IsAzureEnvironment
             };

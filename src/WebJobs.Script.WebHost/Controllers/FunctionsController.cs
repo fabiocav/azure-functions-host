@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Controllers
         public static async Task<AuthorizationLevel> DetermineAuthorizationLevelAsync(HttpRequestMessage request, FunctionDescriptor function, IDependencyResolver resolver)
         {
             var secretManager = resolver.GetService<ISecretManager>();
-            var settings = resolver.GetService<WebHostSettings>();
+            var settings = resolver.GetService<WebHostEnvironmentSettings>();
 
             var authorizationLevel = settings.IsAuthDisabled
                 ? AuthorizationLevel.Admin

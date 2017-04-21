@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
             ISecretsRepository repository = new BlobStorageSecretsRepository(secretsDir, connectionString, "EmptyHost_StartsSuccessfully");
             ISecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
-            WebHostSettings webHostSettings = new WebHostSettings();
+            WebHostEnvironmentSettings webHostSettings = new WebHostEnvironmentSettings();
             webHostSettings.SecretsPath = _secretsDirectory.Path;
 
             ScriptHostManager hostManager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings);
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             ISecretsRepository repository = new FileSystemSecretsRepository(_secretsDirectory.Path);
             SecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
-            WebHostSettings webHostSettings = new WebHostSettings();
+            WebHostEnvironmentSettings webHostSettings = new WebHostEnvironmentSettings();
             webHostSettings.SecretsPath = _secretsDirectory.Path;
 
             var factoryMock = new Mock<IScriptHostFactory>();
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 FunctionTimeout = TimeSpan.FromSeconds(3)
             };
 
-            var manager = new WebScriptHostManager(config, new TestSecretManagerFactory(), _settingsManager, new WebHostSettings { SecretsPath = _secretsDirectory.Path });
+            var manager = new WebScriptHostManager(config, new TestSecretManagerFactory(), _settingsManager, new WebHostEnvironmentSettings { SecretsPath = _secretsDirectory.Path });
             Task task = Task.Run(() => { manager.RunAndBlock(); });
             await TestHelpers.Await(() => manager.State == ScriptHostState.Running);
 
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
                 ISecretsRepository repository = new FileSystemSecretsRepository(SecretsPath);
                 ISecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
-                WebHostSettings webHostSettings = new WebHostSettings();
+                WebHostEnvironmentSettings webHostSettings = new WebHostEnvironmentSettings();
                 webHostSettings.SecretsPath = SecretsPath;
 
                 var hostConfig = config.HostConfig;

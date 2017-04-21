@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers
             _config = new HttpConfiguration();
             _settingsManager = ScriptSettingsManager.Instance;
 
-            HostSettings = new WebHostSettings
+            HostSettings = new WebHostEnvironmentSettings
             {
                 IsSelfHost = true,
                 ScriptPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\sample"),
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers
             WaitForHost();
         }
 
-        public WebHostSettings HostSettings { get; private set; }
+        public WebHostEnvironmentSettings HostSettings { get; private set; }
 
         public HttpClient HttpClient { get; set; }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers
             }
         }
 
-        protected virtual void RegisterDependencies(ContainerBuilder builder, WebHostSettings settings)
+        protected virtual void RegisterDependencies(ContainerBuilder builder, WebHostEnvironmentSettings settings)
         {
         }
 

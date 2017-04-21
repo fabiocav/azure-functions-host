@@ -18,11 +18,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         private static object _syncLock = new object();
 
         private readonly ISecretManagerFactory _secretManagerFactory;
-        private ScriptHostConfiguration _standbyScriptHostConfig;
         private WebScriptHostManager _standbyHostManager;
         private WebHookReceiverManager _standbyReceiverManager;
 
-        private ScriptHostConfiguration _activeScriptHostConfig;
         private WebScriptHostManager _activeHostManager;
         private WebHookReceiverManager _activeReceiverManager;
 
@@ -34,37 +32,22 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             _secretManagerFactory = secretManagerFactory;
         }
 
-        public ISwaggerDocumentManager GetSwaggerDocumentManager(WebHostSettings settings)
+        public ISwaggerDocumentManager GetSwaggerDocumentManager(WebHostEnvironmentSettings settings)
         {
             return GetWebScriptHostManager(settings).SwaggerDocumentManager;
         }
 
-        public ScriptHostConfiguration GetScriptHostConfiguration(WebHostSettings settings)
-        {
-            if (_activeScriptHostConfig != null)
-            {
-                return _activeScriptHostConfig;
-            }
-
-            lock (_syncLock)
-            {
-                EnsureInitialized(settings);
-
-                return _activeScriptHostConfig ?? _standbyScriptHostConfig;
-            }
-        }
-
-        public ISecretManager GetSecretManager(WebHostSettings settings)
+        public ISecretManager GetSecretManager(WebHostEnvironmentSettings settings)
         {
             return GetWebScriptHostManager(settings).SecretManager;
         }
 
-        public HostPerformanceManager GetPerformanceManager(WebHostSettings settings)
+        public HostPerformanceManager GetPerformanceManager(WebHostEnvironmentSettings settings)
         {
             return GetWebScriptHostManager(settings).PerformanceManager;
         }
 
-        public WebScriptHostManager GetWebScriptHostManager(WebHostSettings settings)
+        public WebScriptHostManager GetWebScriptHostManager(WebHostEnvironmentSettings settings)
         {
             if (_activeHostManager != null)
             {
@@ -79,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
         }
 
-        public WebHookReceiverManager GetWebHookReceiverManager(WebHostSettings settings)
+        public WebHookReceiverManager GetWebHookReceiverManager(WebHostEnvironmentSettings settings)
         {
             if (_activeReceiverManager != null)
             {
@@ -94,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
         }
 
-        private void EnsureInitialized(WebHostSettings settings)
+        private void EnsureInitialized(WebHostEnvironmentSettings settings)
         {
             // standby mode can only change from true to false
             // When standby mode changes, we reset all instances
@@ -109,15 +92,14 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                         ReinitializeAppSettings();
                     }
 
-                    _activeScriptHostConfig = CreateScriptHostConfiguration(settings);
+                    InitializeFileSystem(settings.ScriptPath);
 
-                    _activeHostManager = new WebScriptHostManager(_activeScriptHostConfig, _secretManagerFactory, _settingsManager, settings);
+                    _activeHostManager = new WebScriptHostManager(_secretManagerFactory, _settingsManager, settings);
                     _activeReceiverManager = new WebHookReceiverManager(_activeHostManager.SecretManager);
 
                     _standbyHostManager?.Dispose();
                     _standbyReceiverManager?.Dispose();
 
-                    _standbyScriptHostConfig = null;
                     _standbyHostManager = null;
                     _standbyReceiverManager = null;
                     _settingsManager.Reset();
@@ -127,9 +109,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             {
                 if (_standbyHostManager == null)
                 {
-                    _standbyScriptHostConfig = CreateScriptHostConfiguration(settings);
+                    InitializeFileSystem(settings.ScriptPath);
 
-                    _standbyHostManager = new WebScriptHostManager(_standbyScriptHostConfig, _secretManagerFactory, _settingsManager, settings);
+                    _standbyHostManager = new WebScriptHostManager(_secretManagerFactory, _settingsManager, settings);
                     _standbyReceiverManager = new WebHookReceiverManager(_standbyHostManager.SecretManager);
                 }
             }
@@ -146,21 +128,6 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 var startMethod = envSettingType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static);
                 startMethod.Invoke(null, new object[0]);
             }
-        }
-
-        private static ScriptHostConfiguration CreateScriptHostConfiguration(WebHostSettings settings)
-        {
-            InitializeFileSystem(settings.ScriptPath);
-
-            var scriptHostConfig = new ScriptHostConfiguration()
-            {
-                RootScriptPath = settings.ScriptPath,
-                RootLogPath = settings.LogPath,
-                FileLoggingMode = FileLoggingMode.DebugOnly,
-                TraceWriter = settings.TraceWriter
-            };
-
-            return scriptHostConfig;
         }
 
         private static void InitializeFileSystem(string scriptPath)

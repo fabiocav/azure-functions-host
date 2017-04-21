@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         protected void Application_Start()
         {
             var settingsManager = ScriptSettingsManager.Instance;
-            var webHostSettings = WebHostSettings.CreateDefault(settingsManager);
+            var webHostSettings = WebHostEnvironmentSettings.CreateDefault(settingsManager);
 
             VerifyAndEnableShadowCopy(webHostSettings);
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
         }
 
-        private static void VerifyAndEnableShadowCopy(WebHostSettings webHostSettings)
+        private static void VerifyAndEnableShadowCopy(WebHostEnvironmentSettings webHostSettings)
         {
             if (!FeatureFlags.IsEnabled(ScriptConstants.FeatureFlagDisableShadowCopy))
             {

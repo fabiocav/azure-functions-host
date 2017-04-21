@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
     public static class AutofacBootstrap
     {
-        internal static void Initialize(ScriptSettingsManager settingsManager, ContainerBuilder builder, WebHostSettings settings)
+        internal static void Initialize(ScriptSettingsManager settingsManager, ContainerBuilder builder, WebHostEnvironmentSettings settings)
         {
             builder.RegisterInstance(settingsManager);
 

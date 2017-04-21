@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             TestGetter(_webHostResolver.GetWebScriptHostManager);
         }
 
-        private void TestGetter<T>(Func<WebHostSettings, T> func)
+        private void TestGetter<T>(Func<WebHostEnvironmentSettings, T> func)
         {
             using (new TestEnvironment())
             {
@@ -135,10 +135,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
         }
 
-        private WebHostSettings GetWebHostSettings()
+        private WebHostEnvironmentSettings GetWebHostSettings()
         {
             var home = _settingsManager.GetSetting(EnvironmentSettingNames.AzureWebsiteHomePath);
-            return new WebHostSettings
+            return new WebHostEnvironmentSettings
             {
                 IsSelfHost = true,
                 ScriptPath = Path.Combine(home, @"site\wwwroot"),

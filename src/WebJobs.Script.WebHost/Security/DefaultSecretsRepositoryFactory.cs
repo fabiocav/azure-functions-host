@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
     public sealed class DefaultSecretsRepositoryFactory : ISecretsRepositoryFactory
     {
-        public ISecretsRepository Create(ScriptSettingsManager settingsManager, WebHostSettings webHostSettings, ScriptHostConfiguration config)
+        public ISecretsRepository Create(ScriptSettingsManager settingsManager, WebHostEnvironmentSettings webHostSettings, ScriptHostConfiguration config)
         {
             string secretStorageType = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebJobsSecretStorageType);
             string storageString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);

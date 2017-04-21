@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers
 
         public virtual ScriptSecretsType SecretsType => ScriptSecretsType.Function;
 
-        protected override void RegisterDependencies(ContainerBuilder builder, WebHostSettings settings)
+        protected override void RegisterDependencies(ContainerBuilder builder, WebHostEnvironmentSettings settings)
         {
             TestFunctionKeys = new Dictionary<string, string>
             {

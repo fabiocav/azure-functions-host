@@ -48,8 +48,6 @@ namespace Microsoft.Azure.WebJobs.Script
         private AutoRecoveringFileSystemWatcher _debugModeFileWatcher;
         private ImmutableArray<string> _directorySnapshot;
         private BlobLeaseManager _blobLeaseManager;
-        private static readonly TimeSpan MinTimeout = TimeSpan.FromSeconds(1);
-        private static readonly TimeSpan MaxTimeout = TimeSpan.FromMinutes(5);
         private static readonly Regex FunctionNameValidationRegex = new Regex(@"^[a-z][a-z0-9_\-]{0,127}$(?<!^host$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         public static readonly string Version = GetAssemblyFileVersion(typeof(ScriptHost).Assembly);
         private ScriptSettingsManager _settingsManager;
@@ -257,24 +255,6 @@ namespace Microsoft.Azure.WebJobs.Script
                     ScriptConfig.HostConfig.UseDevelopmentSettings();
                 }
 
-                string json = File.ReadAllText(hostConfigFilePath);
-                JObject hostConfig;
-                try
-                {
-                    hostConfig = JObject.Parse(json);
-                }
-                catch (JsonException ex)
-                {
-                    throw new FormatException(string.Format("Unable to parse {0} file.", ScriptConstants.HostMetadataFileName), ex);
-                }
-
-                ScriptConfig.HostConfig.HostConfigMetadata = hostConfig;
-                ApplyConfiguration(hostConfig, ScriptConfig);
-
-                if (string.IsNullOrEmpty(ScriptConfig.HostConfig.HostId))
-                {
-                    ScriptConfig.HostConfig.HostId = GetDefaultHostId(_settingsManager, ScriptConfig);
-                }
                 if (string.IsNullOrEmpty(ScriptConfig.HostConfig.HostId))
                 {
                     throw new InvalidOperationException("An 'id' must be specified in the host configuration.");
@@ -333,7 +313,7 @@ namespace Microsoft.Azure.WebJobs.Script
                     blobManagerCreation = BlobLeaseManager.CreateAsync(storageString, TimeSpan.FromSeconds(15), ScriptConfig.HostConfig.HostId, InstanceId, TraceWriter);
                 }
 
-                var bindingProviders = LoadBindingProviders(ScriptConfig, hostConfig, TraceWriter);
+                var bindingProviders = LoadBindingProviders(ScriptConfig, ScriptConfig.HostConfig.HostConfigMetadata, TraceWriter);
                 ScriptConfig.BindingProviders = bindingProviders;
 
                 TraceWriter.Info(string.Format(CultureInfo.InvariantCulture, "Reading host configuration file '{0}'", hostConfigFilePath));
@@ -1021,170 +1001,6 @@ namespace Microsoft.Azure.WebJobs.Script
             {
                 throw new InvalidOperationException("The specified route conflicts with one or more built in routes.");
             }
-        }
-
-        internal static void ApplyConfiguration(JObject config, ScriptHostConfiguration scriptConfig)
-        {
-            JobHostConfiguration hostConfig = scriptConfig.HostConfig;
-
-            JArray functions = (JArray)config["functions"];
-            if (functions != null && functions.Count > 0)
-            {
-                scriptConfig.Functions = new Collection<string>();
-                foreach (var function in functions)
-                {
-                    scriptConfig.Functions.Add((string)function);
-                }
-            }
-
-            // We may already have a host id, but the one from the JSON takes precedence
-            JToken hostId = (JToken)config["id"];
-            if (hostId != null)
-            {
-                hostConfig.HostId = (string)hostId;
-            }
-
-            JToken fileWatchingEnabled = (JToken)config["fileWatchingEnabled"];
-            if (fileWatchingEnabled != null && fileWatchingEnabled.Type == JTokenType.Boolean)
-            {
-                scriptConfig.FileWatchingEnabled = (bool)fileWatchingEnabled;
-            }
-
-            // Configure the set of watched directories, adding the standard built in
-            // set to any the user may have specified
-            if (scriptConfig.WatchDirectories == null)
-            {
-                scriptConfig.WatchDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            }
-            scriptConfig.WatchDirectories.Add("node_modules");
-            JToken watchDirectories = config["watchDirectories"];
-            if (watchDirectories != null && watchDirectories.Type == JTokenType.Array)
-            {
-                foreach (JToken directory in watchDirectories.Where(p => p.Type == JTokenType.String))
-                {
-                    scriptConfig.WatchDirectories.Add((string)directory);
-                }
-            }
-
-            // Apply Singleton configuration
-            JObject configSection = (JObject)config["singleton"];
-            JToken value = null;
-            if (configSection != null)
-            {
-                if (configSection.TryGetValue("lockPeriod", out value))
-                {
-                    hostConfig.Singleton.LockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("listenerLockPeriod", out value))
-                {
-                    hostConfig.Singleton.ListenerLockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("listenerLockRecoveryPollingInterval", out value))
-                {
-                    hostConfig.Singleton.ListenerLockRecoveryPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("lockAcquisitionTimeout", out value))
-                {
-                    hostConfig.Singleton.LockAcquisitionTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("lockAcquisitionPollingInterval", out value))
-                {
-                    hostConfig.Singleton.LockAcquisitionPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-            }
-
-            // Apply Tracing/Logging configuration
-            configSection = (JObject)config["tracing"];
-            if (configSection != null)
-            {
-                if (configSection.TryGetValue("consoleLevel", out value))
-                {
-                    TraceLevel consoleLevel;
-                    if (Enum.TryParse<TraceLevel>((string)value, true, out consoleLevel))
-                    {
-                        hostConfig.Tracing.ConsoleLevel = consoleLevel;
-                    }
-                }
-
-                if (configSection.TryGetValue("fileLoggingMode", out value))
-                {
-                    FileLoggingMode fileLoggingMode;
-                    if (Enum.TryParse<FileLoggingMode>((string)value, true, out fileLoggingMode))
-                    {
-                        scriptConfig.FileLoggingMode = fileLoggingMode;
-                    }
-                }
-            }
-
-            if (config.TryGetValue("functionTimeout", out value))
-            {
-                TimeSpan requestedTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-
-                // Only apply limits if this is Dynamic.
-                if (ScriptSettingsManager.Instance.IsDynamicSku && (requestedTimeout < MinTimeout || requestedTimeout > MaxTimeout))
-                {
-                    string message = $"{nameof(scriptConfig.FunctionTimeout)} must be between {MinTimeout} and {MaxTimeout}.";
-                    throw new ArgumentException(message);
-                }
-
-                scriptConfig.FunctionTimeout = requestedTimeout;
-            }
-            else if (ScriptSettingsManager.Instance.IsDynamicSku)
-            {
-                // Apply a default if this is running on Dynamic.
-                scriptConfig.FunctionTimeout = MaxTimeout;
-            }
-
-            // apply swagger configuration
-            scriptConfig.SwaggerEnabled = false;
-
-            configSection = (JObject)config["swagger"];
-            JToken swaggerEnabled;
-
-            if (configSection != null &&
-                configSection.TryGetValue("enabled", out swaggerEnabled) &&
-                swaggerEnabled.Type == JTokenType.Boolean)
-            {
-                scriptConfig.SwaggerEnabled = (bool)swaggerEnabled;
-            }
-        }
-
-        internal static string GetDefaultHostId(ScriptSettingsManager settingsManager, ScriptHostConfiguration scriptConfig)
-        {
-            // We're setting the default here on the newly created configuration
-            // If the user has explicitly set the HostID via host.json, it will overwrite
-            // what we set here
-            string hostId = null;
-            if (scriptConfig.IsSelfHost)
-            {
-                // When running locally, derive a stable host ID from machine name
-                // and root path. We use a hash rather than the path itself to ensure
-                // IDs differ (due to truncation) between folders that may share the same
-                // root path prefix.
-                // Note that such an ID won't work in distributed scenarios, so should
-                // only be used for local/CLI scenarios.
-                string sanitizedMachineName = Environment.MachineName
-                    .Where(char.IsLetterOrDigit)
-                    .Aggregate(new StringBuilder(), (b, c) => b.Append(c)).ToString();
-                hostId = $"{sanitizedMachineName}-{Math.Abs(scriptConfig.RootScriptPath.GetHashCode())}";
-            }
-            else if (!string.IsNullOrEmpty(settingsManager.AzureWebsiteUniqueSlotName))
-            {
-                // If running on Azure Web App, derive the host ID from unique site slot name
-                hostId = settingsManager.AzureWebsiteUniqueSlotName;
-            }
-
-            if (!string.IsNullOrEmpty(hostId))
-            {
-                if (hostId.Length > ScriptConstants.MaximumHostIdLength)
-                {
-                    // Truncate to the max host name length if needed
-                    hostId = hostId.Substring(0, ScriptConstants.MaximumHostIdLength);
-                }
-            }
-
-            // Lowercase and trim any trailing '-' as they can cause problems with queue names
-            return hostId?.ToLowerInvariant().TrimEnd('-');
         }
 
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)

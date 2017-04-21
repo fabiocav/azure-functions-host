@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Filters
                 actionContext.Request.SetAuthorizationLevel(requestAuthorizationLevel);
             }
 
-            var settings = actionContext.ControllerContext.Configuration.DependencyResolver.GetService<WebHostSettings>();
+            var settings = actionContext.ControllerContext.Configuration.DependencyResolver.GetService<WebHostEnvironmentSettings>();
 
             if (settings.IsAuthDisabled || SkipAuthorization(actionContext) || Level == AuthorizationLevel.Anonymous)
             {

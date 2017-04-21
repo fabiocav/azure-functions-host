@@ -343,6 +343,8 @@
     <Compile Include="Binding\WebJobsCoreScriptBindingProvider.cs" />
     <Compile Include="Binding\SimpleValueProvider.cs" />
     <Compile Include="Config\FeatureFlags.cs" />
+    <Compile Include="Config\ScriptConfigurationManager.cs" />
+    <Compile Include="Config\ScriptHostEnvironmentSettings.cs" />
     <Compile Include="Description\Binding\Cardinality.cs" />
     <Compile Include="Description\DiagnosticSeverityExtensions.cs" />
     <Compile Include="Description\DotNet\CSharp\Analyzers\AsyncVoidAnalyzer.cs" />

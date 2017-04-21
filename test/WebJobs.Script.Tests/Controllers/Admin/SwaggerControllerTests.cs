@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers.Admin
             _hostMock.Setup(p => p.Functions).Returns(_testFunctions);
             _hostMock.Object.ScriptConfig.SwaggerEnabled = true;
 
-            WebHostSettings settings = new WebHostSettings();
+            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings();
             settings.SecretsPath = _secretsDirectory.Path;
             _managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { _config, new TestSecretManagerFactory(), _settingsManager, settings });
             _managerMock.SetupGet(p => p.Instance).Returns(_hostMock.Object);

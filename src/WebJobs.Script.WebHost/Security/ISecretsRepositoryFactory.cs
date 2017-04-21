@@ -9,6 +9,6 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
     public interface ISecretsRepositoryFactory
     {
-        ISecretsRepository Create(ScriptSettingsManager settingsManager, WebHostSettings webHostSettings, ScriptHostConfiguration config);
+        ISecretsRepository Create(ScriptSettingsManager settingsManager, WebHostEnvironmentSettings webHostSettings, ScriptHostConfiguration config);
     }
 }
