@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public abstract Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType);
 
-        internal static Collection<FunctionBinding> GetBindings(ScriptHostConfiguration config, IEnumerable<BindingMetadata> functions, FileAccess fileAccess)
+        internal static Collection<FunctionBinding> GetBindings(ScriptHost host, ScriptHostConfiguration config, IEnumerable<BindingMetadata> functions, FileAccess fileAccess)
         {
             Collection<FunctionBinding> bindings = new Collection<FunctionBinding>();
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                             break;
                         default:
                             FunctionBinding binding = null;
-                            if (TryParseFunctionBinding(config, function.Raw, out binding))
+                            if (TryParseFunctionBinding(host, config, function.Raw, out binding))
                             {
                                 bindings.Add(binding);
                             }
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             return bindings;
         }
 
-        private static bool TryParseFunctionBinding(ScriptHostConfiguration config, JObject metadata, out FunctionBinding functionBinding)
+        private static bool TryParseFunctionBinding(ScriptHost host, ScriptHostConfiguration config, JObject metadata, out FunctionBinding functionBinding)
         {
             functionBinding = null;
 
             ScriptBindingContext bindingContext = new ScriptBindingContext(metadata);
             ScriptBinding scriptBinding = null;
-            foreach (var provider in config.BindingProviders)
+            foreach (var provider in host.BindingProviders)
             {
                 if (provider.TryCreate(bindingContext, out scriptBinding))
                 {

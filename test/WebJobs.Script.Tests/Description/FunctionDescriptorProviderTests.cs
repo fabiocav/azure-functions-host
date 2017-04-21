@@ -22,10 +22,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         public FunctionDescriptorProviderTests()
         {
             string rootPath = Path.Combine(Environment.CurrentDirectory, @"TestScripts\Node");
-            ScriptHostConfiguration config = new ScriptHostConfiguration
-            {
-                RootScriptPath = rootPath
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithHostId("abcdefg123")
+                .WithRootScriptPath(rootPath).Build();
 
             var environment = new Mock<IScriptHostEnvironment>();
             var eventManager = new Mock<IScriptEventManager>();

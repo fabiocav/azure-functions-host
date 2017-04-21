@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
     public static class WebApiConfig
     {
         public static void Initialize(HttpConfiguration config, ScriptSettingsManager settingsManager = null,
-            WebHostSettings settings = null, Action<ContainerBuilder, WebHostSettings> dependencyCallback = null)
+            WebHostEnvironmentSettings settings = null, Action<ContainerBuilder, WebHostEnvironmentSettings> dependencyCallback = null)
         {
             Register(config, settingsManager, settings, dependencyCallback);
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         }
 
         public static void Register(HttpConfiguration config, ScriptSettingsManager settingsManager = null,
-            WebHostSettings settings = null, Action<ContainerBuilder, WebHostSettings> dependencyCallback = null)
+            WebHostEnvironmentSettings settings = null, Action<ContainerBuilder, WebHostEnvironmentSettings> dependencyCallback = null)
         {
             if (config == null)
             {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
 
             settingsManager = settingsManager ?? ScriptSettingsManager.Instance;
-            settings = settings ?? WebHostSettings.CreateDefault(settingsManager);
+            settings = settings ?? WebHostEnvironmentSettings.CreateDefault(settingsManager);
 
             var builder = new ContainerBuilder();
             builder.RegisterApiControllers(typeof(FunctionsController).Assembly);

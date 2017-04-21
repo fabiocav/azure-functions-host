@@ -53,10 +53,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public void ReadFunctionMetadata_Succeeds()
         {
-            var config = new ScriptHostConfiguration
-            {
-                RootScriptPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\sample")
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\sample"))
+                .Build();
+
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
             var functionErrors = new Dictionary<string, Collection<string>>();
             var metadata = ScriptHost.ReadFunctionMetadata(config, traceWriter, null, functionErrors);
@@ -108,18 +108,33 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public void FileLoggingEnabled_ReturnsExpectedValue()
         {
-            ScriptHost host = _fixture.Host;
+            var environment = new Mock<IScriptHostEnvironment>();
 
-            host.ScriptConfig.FileLoggingMode = FileLoggingMode.DebugOnly;
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithHostId(ID)
+                .WithFileLoggingMode(FileLoggingMode.DebugOnly)
+                .Build();
+            ScriptHost host = ScriptHost.Create(environment.Object, config);
             host.LastDebugNotify = DateTime.MinValue;
+            Assert.Equal(FileLoggingMode.DebugOnly, host.ScriptConfig.FileLoggingMode);
             Assert.False(host.FileLoggingEnabled);
             host.NotifyDebug();
             Assert.True(host.FileLoggingEnabled);
 
-            host.ScriptConfig.FileLoggingMode = FileLoggingMode.Never;
+            config = new ScriptHostConfiguration.Builder()
+                .WithHostId(ID)
+                .WithFileLoggingMode(FileLoggingMode.Never)
+                .Build();
+            host = ScriptHost.Create(environment.Object, config);
+            Assert.Equal(FileLoggingMode.Never, host.ScriptConfig.FileLoggingMode);
             Assert.False(host.FileLoggingEnabled);
 
-            host.ScriptConfig.FileLoggingMode = FileLoggingMode.Always;
+            config = new ScriptHostConfiguration.Builder()
+                .WithHostId(ID)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .Build();
+            host = ScriptHost.Create(environment.Object, config);
+            Assert.Equal(FileLoggingMode.Always, host.ScriptConfig.FileLoggingMode);
             Assert.True(host.FileLoggingEnabled);
             host.LastDebugNotify = DateTime.MinValue;
             Assert.True(host.FileLoggingEnabled);
@@ -361,28 +376,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Assert.Equal(@"c:\functions\index.js", scriptFile);
         }
 
-        [Fact]
-        public void Create_InvalidHostJson_ThrowsInformativeException()
-        {
-            string rootPath = Path.Combine(Environment.CurrentDirectory, @"TestScripts\Invalid");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration()
-            {
-                RootScriptPath = rootPath
-            };
-
-            var environment = new Mock<IScriptHostEnvironment>();
-            var eventManager = new Mock<IScriptEventManager>();
-
-            var ex = Assert.Throws<FormatException>(() =>
-            {
-                ScriptHost.Create(environment.Object, eventManager.Object, scriptConfig, _settingsManager);
-            });
-
-            Assert.Equal(string.Format("Unable to parse {0} file.", ScriptConstants.HostMetadataFileName), ex.Message);
-            Assert.Equal("Invalid property identifier character: ~. Path '', line 2, position 4.", ex.InnerException.Message);
-        }
-
         [Theory]
         [InlineData("host")]
         [InlineData("-function")]
@@ -398,16 +391,12 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 Directory.CreateDirectory(invalidFunctionNamePath);
 
-                JObject config = new JObject();
-                config["id"] = ID;
-
-                File.WriteAllText(Path.Combine(rootPath, ScriptConstants.HostMetadataFileName), config.ToString());
                 File.WriteAllText(Path.Combine(invalidFunctionNamePath, ScriptConstants.FunctionMetadataFileName), string.Empty);
 
-                ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration()
-                {
-                    RootScriptPath = rootPath
-                };
+                ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration.Builder()
+                    .WithHostId(ID)
+                    .WithRootScriptPath(rootPath)
+                    .Build();
                 var environment = new Mock<IScriptHostEnvironment>();
                 var eventManager = new Mock<IScriptEventManager>();
 
@@ -424,18 +413,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                     Directory.Delete(rootPath, true);
                 }
             }
-        }
-
-        [Fact]
-        public void ApplyConfiguration_TopLevel()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-
-            Assert.Equal(ID, scriptConfig.HostConfig.HostId);
         }
 
         // TODO: Move this test into a new WebJobsCoreScriptBindingProvider class since
@@ -538,433 +515,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             provider.Initialize();
 
             Assert.False(hostConfig.Blobs.CentralizedPoisonQueue);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_Singleton()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-            JObject singleton = new JObject();
-            config["singleton"] = singleton;
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-
-            Assert.Equal(ID, scriptConfig.HostConfig.HostId);
-            Assert.Equal(15, scriptConfig.HostConfig.Singleton.LockPeriod.TotalSeconds);
-            Assert.Equal(1, scriptConfig.HostConfig.Singleton.ListenerLockPeriod.TotalMinutes);
-            Assert.Equal(1, scriptConfig.HostConfig.Singleton.ListenerLockRecoveryPollingInterval.TotalMinutes);
-            Assert.Equal(TimeSpan.MaxValue, scriptConfig.HostConfig.Singleton.LockAcquisitionTimeout);
-            Assert.Equal(5, scriptConfig.HostConfig.Singleton.LockAcquisitionPollingInterval.TotalSeconds);
-
-            singleton["lockPeriod"] = "00:00:17";
-            singleton["listenerLockPeriod"] = "00:00:22";
-            singleton["listenerLockRecoveryPollingInterval"] = "00:00:33";
-            singleton["lockAcquisitionTimeout"] = "00:05:00";
-            singleton["lockAcquisitionPollingInterval"] = "00:00:08";
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-
-            Assert.Equal(17, scriptConfig.HostConfig.Singleton.LockPeriod.TotalSeconds);
-            Assert.Equal(22, scriptConfig.HostConfig.Singleton.ListenerLockPeriod.TotalSeconds);
-            Assert.Equal(33, scriptConfig.HostConfig.Singleton.ListenerLockRecoveryPollingInterval.TotalSeconds);
-            Assert.Equal(5, scriptConfig.HostConfig.Singleton.LockAcquisitionTimeout.TotalMinutes);
-            Assert.Equal(8, scriptConfig.HostConfig.Singleton.LockAcquisitionPollingInterval.TotalSeconds);
-        }
-
-        // with swagger with setting name with value
-        // with swagger with setting name with wrong value set
-        [Fact]
-        public void ApplyConfiguration_Swagger()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            // no swagger section
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(false, scriptConfig.SwaggerEnabled);
-
-            // empty swagger section
-            JObject swagger = new JObject();
-            config["swagger"] = swagger;
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(false, scriptConfig.SwaggerEnabled);
-
-            // swagger section present, with swagger mode set to null
-            swagger["enabled"] = string.Empty;
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(false, scriptConfig.SwaggerEnabled);
-
-            // swagger section present, with swagger mode set to true
-            swagger["enabled"] = true;
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(true, scriptConfig.SwaggerEnabled);
-
-            // swagger section present, with swagger mode set to invalid
-            swagger["enabled"] = "invalid";
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(false, scriptConfig.SwaggerEnabled);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_Tracing()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-            JObject tracing = new JObject();
-            config["tracing"] = tracing;
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            Assert.Equal(TraceLevel.Info, scriptConfig.HostConfig.Tracing.ConsoleLevel);
-            Assert.Equal(FileLoggingMode.Never, scriptConfig.FileLoggingMode);
-
-            tracing["consoleLevel"] = "Verbose";
-            tracing["fileLoggingMode"] = "Always";
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(TraceLevel.Verbose, scriptConfig.HostConfig.Tracing.ConsoleLevel);
-            Assert.Equal(FileLoggingMode.Always, scriptConfig.FileLoggingMode);
-
-            tracing["fileLoggingMode"] = "DebugOnly";
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(FileLoggingMode.DebugOnly, scriptConfig.FileLoggingMode);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_FileWatching()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            Assert.True(scriptConfig.FileWatchingEnabled);
-
-            scriptConfig = new ScriptHostConfiguration();
-            config["fileWatchingEnabled"] = new JValue(true);
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.True(scriptConfig.FileWatchingEnabled);
-            Assert.Equal(1, scriptConfig.WatchDirectories.Count);
-            Assert.Equal("node_modules", scriptConfig.WatchDirectories.ElementAt(0));
-
-            scriptConfig = new ScriptHostConfiguration();
-            config["fileWatchingEnabled"] = new JValue(false);
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.False(scriptConfig.FileWatchingEnabled);
-
-            scriptConfig = new ScriptHostConfiguration();
-            config["fileWatchingEnabled"] = new JValue(true);
-            config["watchDirectories"] = new JArray("Shared", "Tools");
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.True(scriptConfig.FileWatchingEnabled);
-            Assert.Equal(3, scriptConfig.WatchDirectories.Count);
-            Assert.Equal("node_modules", scriptConfig.WatchDirectories.ElementAt(0));
-            Assert.Equal("Shared", scriptConfig.WatchDirectories.ElementAt(1));
-            Assert.Equal("Tools", scriptConfig.WatchDirectories.ElementAt(2));
-        }
-
-        [Fact]
-        public void ApplyConfiguration_AppliesFunctionsFilter()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            Assert.Null(scriptConfig.Functions);
-
-            config["functions"] = new JArray("Function1", "Function2");
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(2, scriptConfig.Functions.Count);
-            Assert.Equal("Function1", scriptConfig.Functions.ElementAt(0));
-            Assert.Equal("Function2", scriptConfig.Functions.ElementAt(1));
-        }
-
-        [Fact]
-        public void ApplyConfiguration_AppliesTimeout()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            Assert.Null(scriptConfig.FunctionTimeout);
-
-            config["functionTimeout"] = "00:00:30";
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(TimeSpan.FromSeconds(30), scriptConfig.FunctionTimeout);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_TimeoutDefaultsNull_IfNotDynamic()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Null(scriptConfig.FunctionTimeout);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_AppliesDefaultTimeout_IfDynamic()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            try
-            {
-                _settingsManager.SetSetting(EnvironmentSettingNames.AzureWebsiteSku, "Dynamic");
-                ScriptHost.ApplyConfiguration(config, scriptConfig);
-                Assert.Equal(ScriptHost.DefaultFunctionTimeout, scriptConfig.FunctionTimeout);
-            }
-            finally
-            {
-                _settingsManager.SetSetting(EnvironmentSettingNames.AzureWebsiteSku, null);
-            }
-        }
-
-        [Fact]
-        public void ApplyConfiguration_NoTimeoutLimits_IfNotDynamic()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            var timeout = ScriptHost.MaxFunctionTimeout + TimeSpan.FromSeconds(1);
-            config["functionTimeout"] = timeout.ToString();
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(timeout, scriptConfig.FunctionTimeout);
-
-            timeout = ScriptHost.MinFunctionTimeout - TimeSpan.FromSeconds(1);
-            config["functionTimeout"] = timeout.ToString();
-            ScriptHost.ApplyConfiguration(config, scriptConfig);
-            Assert.Equal(timeout, scriptConfig.FunctionTimeout);
-        }
-
-        [Fact]
-        public void ApplyConfiguration_AppliesTimeoutLimits_IfDynamic()
-        {
-            JObject config = new JObject();
-            config["id"] = ID;
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-
-            try
-            {
-                _settingsManager.SetSetting(EnvironmentSettingNames.AzureWebsiteSku, "Dynamic");
-
-                config["functionTimeout"] = (ScriptHost.MaxFunctionTimeout + TimeSpan.FromSeconds(1)).ToString();
-                var ex = Assert.Throws<ArgumentException>(() => ScriptHost.ApplyConfiguration(config, scriptConfig));
-                var expectedMessage = "FunctionTimeout must be between 00:00:01 and 00:10:00.";
-                Assert.Equal(expectedMessage, ex.Message);
-
-                config["functionTimeout"] = (ScriptHost.MinFunctionTimeout - TimeSpan.FromSeconds(1)).ToString();
-                Assert.Throws<ArgumentException>(() => ScriptHost.ApplyConfiguration(config, scriptConfig));
-                Assert.Equal(expectedMessage, ex.Message);
-            }
-            finally
-            {
-                _settingsManager.SetSetting(EnvironmentSettingNames.AzureWebsiteSku, null);
-            }
-        }
-
-        [Fact]
-        public void ApplyApplicationInsightsConfig_SamplingDisabled_CreatesNullSettings()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'applicationInsights': {
-                    'sampling': {
-                        'isEnabled': false
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            Assert.Null(scriptConfig.ApplicationInsightsSamplingSettings);
-        }
-
-        [Fact]
-        public void ApplyApplicationInsightsConfig_SamplingDisabled_IgnoresOtherSettings()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'applicationInsights': {
-                    'sampling': {
-                        'isEnabled': false,
-                        'maxTelemetryItemsPerSecond': 25
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            Assert.Null(scriptConfig.ApplicationInsightsSamplingSettings);
-        }
-
-        [Fact]
-        public void ApplyApplicationInsightsConfig_SamplingEnabled_CreatesDefaultSettings()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'applicationInsights': {
-                    'sampling': {
-                        'isEnabled': true
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.ApplicationInsightsSamplingSettings);
-            Assert.Equal(5, scriptConfig.ApplicationInsightsSamplingSettings.MaxTelemetryItemsPerSecond);
-        }
-
-        [Fact]
-        public void ApplyApplicationInsightsConfig_Sets_MaxTelemetryItemsPerSecond()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'applicationInsights': {
-                    'sampling': {
-                        'maxTelemetryItemsPerSecond': 25
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.ApplicationInsightsSamplingSettings);
-            Assert.Equal(25, scriptConfig.ApplicationInsightsSamplingSettings.MaxTelemetryItemsPerSecond);
-        }
-
-        [Fact]
-        public void ApplyApplicationInsightsConfig_NoSettings_CreatesDefaultSettings()
-        {
-            JObject config = JObject.Parse("{ }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.ApplicationInsightsSamplingSettings);
-            Assert.Equal(5, scriptConfig.ApplicationInsightsSamplingSettings.MaxTelemetryItemsPerSecond);
-        }
-
-        [Fact]
-        public void ApplyLoggerConfig_Sets_DefaultLevel()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'logger': {
-                    'categoryFilter': {
-                        'defaultLevel': 'Debug'
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyLoggerConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.LogFilter);
-            Assert.Equal(LogLevel.Debug, scriptConfig.LogFilter.DefaultLevel);
-            Assert.Empty(scriptConfig.LogFilter.CategoryLevels);
-        }
-
-        [Fact]
-        public void ApplyLoggerConfig_Sets_CategoryLevels()
-        {
-            JObject config = JObject.Parse(@"
-            {
-                'logger': {
-                    'categoryFilter': {
-                        'defaultLevel': 'Trace',
-                        'categoryLevels': {
-                            'Host.General': 'Information',
-                            'Host.SomethingElse': 'Debug',
-                            'Some.Other.Category': 'None'
-                        }
-                    }
-                }
-            }");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyLoggerConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.LogFilter);
-            Assert.Equal(LogLevel.Trace, scriptConfig.LogFilter.DefaultLevel);
-            Assert.Equal(3, scriptConfig.LogFilter.CategoryLevels.Count);
-            Assert.Equal(LogLevel.Information, scriptConfig.LogFilter.CategoryLevels["Host.General"]);
-            Assert.Equal(LogLevel.Debug, scriptConfig.LogFilter.CategoryLevels["Host.SomethingElse"]);
-            Assert.Equal(LogLevel.None, scriptConfig.LogFilter.CategoryLevels["Some.Other.Category"]);
-        }
-
-        [Fact]
-        public void ApplyLoggerConfig_DefaultsToInfo()
-        {
-            JObject config = JObject.Parse("{}");
-
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            ScriptHost.ApplyLoggerConfig(config, scriptConfig);
-
-            Assert.NotNull(scriptConfig.LogFilter);
-            Assert.Equal(LogLevel.Information, scriptConfig.LogFilter.DefaultLevel);
-            Assert.Empty(scriptConfig.LogFilter.CategoryLevels);
-        }
-
-        [Fact]
-        public void ConfigureLoggerFactory_Default()
-        {
-            var config = new ScriptHostConfiguration();
-            var loggerFactory = new TestLoggerFactory();
-            config.HostConfig.LoggerFactory = loggerFactory;
-
-            // Make sure no App Insights is configured
-            var settingsManager = ScriptSettingsManager.Instance;
-            settingsManager.SetSetting(ScriptConstants.AppInsightsInstrumentationKey, null);
-
-            var metricsLogger = new TestMetricsLogger();
-
-            ScriptHost.ConfigureLoggerFactory(config, settingsManager, metricsLogger, () => true);
-
-            Assert.IsType<FileLoggerProvider>(loggerFactory.Providers.Single());
-            Assert.Empty(metricsLogger.LoggedEvents);
-        }
-
-        [Fact]
-        public void ConfigureLoggerFactory_ApplicationInsights()
-        {
-            var config = new ScriptHostConfiguration();
-            var loggerFactory = new TestLoggerFactory();
-            config.HostConfig.LoggerFactory = loggerFactory;
-
-            // Make sure no App Insights is configured
-            var settingsManager = ScriptSettingsManager.Instance;
-            settingsManager.SetSetting(ScriptConstants.AppInsightsInstrumentationKey, "Some_Instrumentation_Key");
-
-            var metricsLogger = new TestMetricsLogger();
-
-            ScriptHost.ConfigureLoggerFactory(config, settingsManager, metricsLogger, () => true);
-
-            Assert.Equal(2, loggerFactory.Providers.Count);
-
-            Assert.Equal(1, loggerFactory.Providers.OfType<FileLoggerProvider>().Count());
-
-            // The app insights logger is internal, so just check the name
-            ILoggerProvider appInsightsProvider = loggerFactory.Providers.Last();
-            Assert.Equal("ApplicationInsightsLoggerProvider", appInsightsProvider.GetType().Name);
-
-            Assert.Equal(1, metricsLogger.LoggedEvents.Count);
         }
 
         [Fact]
@@ -1221,6 +771,23 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Assert.False(host.IsFunction("DoesNotExist"));
             Assert.False(host.IsFunction(string.Empty));
             Assert.False(host.IsFunction(null));
+        }
+
+        [Fact]
+        public void GetDefaultHostId_SelfHost_ReturnsExpectedResult()
+        {
+            var config = new ScriptHostConfiguration.Builder()
+            .WithSelfHostValue(true)
+            .WithRootScriptPath(@"c:\testing\FUNCTIONS-TEST\test$#")
+            .Build();
+
+            var scriptSettingsManagerMock = new Mock<ScriptSettingsManager>(MockBehavior.Strict);
+
+            string hostId = Utility.GetDefaultHostId(scriptSettingsManagerMock.Object, config.IsSelfHost, config.RootScriptPath);
+            string sanitizedMachineName = Environment.MachineName
+                    .Where(char.IsLetterOrDigit)
+                    .Aggregate(new StringBuilder(), (b, c) => b.Append(c)).ToString().ToLowerInvariant();
+            Assert.Equal($"{sanitizedMachineName}-789851553", hostId);
         }
 
         public class AssemblyMock : Assembly

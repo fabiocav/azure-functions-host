@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         private HttpActionContext _actionContext;
         private HostSecretsInfo _hostSecrets;
         private Dictionary<string, string> _functionSecrets;
-        private WebHostSettings _webHostSettings;
+        private WebHostEnvironmentSettings _webHostSettings;
 
         public AuthorizationLevelAttributeTests()
         {
@@ -71,8 +71,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             };
             MockSecretManager.Setup(p => p.GetFunctionSecretsAsync(It.IsAny<string>(), false)).ReturnsAsync(_functionSecrets);
             mockDependencyResolver.Setup(p => p.GetService(typeof(ISecretManager))).Returns(MockSecretManager.Object);
-            _webHostSettings = new WebHostSettings();
-            mockDependencyResolver.Setup(p => p.GetService(typeof(WebHostSettings))).Returns(_webHostSettings);
+            _webHostSettings = new WebHostEnvironmentSettings();
+            mockDependencyResolver.Setup(p => p.GetService(typeof(WebHostEnvironmentSettings))).Returns(_webHostSettings);
         }
 
         protected System.Web.Http.HttpConfiguration HttpConfig { get; }

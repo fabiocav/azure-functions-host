@@ -41,8 +41,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             ValidateFunction(functionMetadata);
 
             // parse the bindings
-            Collection<FunctionBinding> inputBindings = FunctionBinding.GetBindings(Config, functionMetadata.InputBindings, FileAccess.Read);
-            Collection<FunctionBinding> outputBindings = FunctionBinding.GetBindings(Config, functionMetadata.OutputBindings, FileAccess.Write);
+            Collection<FunctionBinding> inputBindings = FunctionBinding.GetBindings(Host, Config, functionMetadata.InputBindings, FileAccess.Read);
+            Collection<FunctionBinding> outputBindings = FunctionBinding.GetBindings(Host, Config, functionMetadata.OutputBindings, FileAccess.Write);
 
             BindingMetadata triggerMetadata = functionMetadata.InputBindings.FirstOrDefault(p => p.IsTrigger);
             string scriptFilePath = Path.Combine(Config.RootScriptPath, functionMetadata.ScriptFile);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             ScriptBindingContext bindingContext = new ScriptBindingContext(metadata);
             ScriptBinding binding = null;
-            foreach (var provider in this.Config.BindingProviders)
+            foreach (var provider in Host.BindingProviders)
             {
                 if (provider.TryCreate(bindingContext, out binding))
                 {

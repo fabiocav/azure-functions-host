@@ -244,13 +244,12 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             var functionTraceWriter = new TestTraceWriter(System.Diagnostics.TraceLevel.Verbose);
             var traceWriter = new TestTraceWriter(System.Diagnostics.TraceLevel.Verbose);
-            var scriptHostConfiguration = new ScriptHostConfiguration
-            {
-                HostConfig = new JobHostConfiguration(),
-                TraceWriter = traceWriter,
-                FileLoggingMode = FileLoggingMode.Always,
-                FileWatchingEnabled = true
-            };
+
+            var scriptHostConfiguration = new ScriptHostConfiguration.Builder()
+                .WithTraceWriter(traceWriter)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .WithFileWatchingEnabled(true)
+                .Build();
 
             scriptHostConfiguration.HostConfig.Tracing.ConsoleLevel = System.Diagnostics.TraceLevel.Verbose;
             var eventManager = new ScriptEventManager();

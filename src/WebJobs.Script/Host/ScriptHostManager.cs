@@ -27,9 +27,9 @@ namespace Microsoft.Azure.WebJobs.Script
     /// </summary>
     public class ScriptHostManager : IScriptHostEnvironment, IDisposable
     {
-        private readonly ScriptHostConfiguration _config;
         private readonly IScriptHostFactory _scriptHostFactory;
         private readonly IScriptHostEnvironment _environment;
+        private readonly ScriptHostEnvironmentSettings _environmentSettings;
         private readonly IDisposable _fileEventSubscription;
         private ScriptHost _currentInstance;
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Script
         private ScriptSettingsManager _settingsManager;
         private CancellationTokenSource _restartDelayTokenSource;
 
-        public ScriptHostManager(ScriptHostConfiguration config, IScriptEventManager eventManager = null, IScriptHostEnvironment environment = null)
+        public ScriptHostManager(ScriptHostEnvironmentSettings environmentSettings, ScriptHostConfiguration config, IScriptEventManager eventManager = null, IScriptHostEnvironment environment = null)
             : this(config, ScriptSettingsManager.Instance, new ScriptHostFactory(), eventManager, environment)
         {
             if (config.FileWatchingEnabled)
@@ -69,14 +69,18 @@ namespace Microsoft.Azure.WebJobs.Script
             IScriptHostEnvironment environment = null)
         {
             _environment = environment ?? this;
-            _config = config;
             _settingsManager = settingsManager;
+            _environmentSettings = environmentSettings;
             _scriptHostFactory = scriptHostFactory;
 
             EventManager = eventManager ?? new ScriptEventManager();
         }
 
         protected IScriptEventManager EventManager { get; }
+
+        protected ScriptSettingsManager SettingsManager => _settingsManager;
+
+        protected ScriptHostEnvironmentSettings EnvironmentSettings => _environmentSettings;
 
         public virtual ScriptHost Instance
         {
@@ -109,6 +113,8 @@ namespace Microsoft.Azure.WebJobs.Script
             return State == ScriptHostState.Created || State == ScriptHostState.Running;
         }
 
+        protected virtual ScriptHostConfiguration CreateHostConfiguration() => ScriptConfigurationManager.BuildHostConfiguration(_settingsManager, _environmentSettings);
+
         public void RunAndBlock(CancellationToken cancellationToken = default(CancellationToken))
         {
             int consecutiveErrorCount = 0;
@@ -124,13 +130,10 @@ namespace Microsoft.Azure.WebJobs.Script
                         State = ScriptHostState.Default;
                     }
 
-                    // Create a new host config, but keep the host id from existing one
-                    _config.HostConfig = new JobHostConfiguration
-                    {
-                        HostId = _config.HostConfig.HostId
-                    };
-                    OnInitializeConfig(_config);
-                    newInstance = _scriptHostFactory.Create(_environment, EventManager, _settingsManager, _config);
+                    ScriptHostConfiguration config = CreateHostConfiguration();
+
+                    OnInitializeConfig(config);
+                    newInstance = _scriptHostFactory.Create(_environment, _settingsManager, config);
                     _traceWriter = newInstance.TraceWriter;
                     _logger = newInstance.Logger;
 
@@ -140,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Script
                         _liveInstances.Add(newInstance);
                     }
 
-                    OnHostCreated();
+                    OnHostCreated(config);
 
                     string message = string.Format("Starting Host (HostId={0}, Version={1}, ProcessId={2}, Debug={3}, Attempt={4})",
                         newInstance.ScriptConfig.HostConfig.HostId, ScriptHost.Version, Process.GetCurrentProcess().Id, newInstance.InDebugMode.ToString(), consecutiveErrorCount);
@@ -152,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Script
                     // log any function initialization errors
                     LogErrors(newInstance);
 
-                    OnHostStarted();
+                    OnHostStarted(config);
 
                     // only after ALL initialization is complete do we set the
                     // state to Running
@@ -341,14 +344,14 @@ namespace Microsoft.Azure.WebJobs.Script
         {
         }
 
-        protected virtual void OnHostCreated()
+        protected virtual void OnHostCreated(ScriptHostConfiguration config)
         {
             State = ScriptHostState.Created;
         }
 
-        protected virtual void OnHostStarted()
+        protected virtual void OnHostStarted(ScriptHostConfiguration config)
         {
-            var metricsLogger = _config.HostConfig.GetService<IMetricsLogger>();
+            var metricsLogger = config.HostConfig.GetService<IMetricsLogger>();
             metricsLogger.LogEvent(new HostStarted(Instance));
         }
 

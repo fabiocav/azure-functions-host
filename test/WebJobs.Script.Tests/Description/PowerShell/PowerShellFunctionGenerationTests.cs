@@ -162,11 +162,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             var environment = new Mock<IScriptHostEnvironment>();
             var eventManager = new Mock<IScriptEventManager>();
             string rootPath = Path.Combine(Environment.CurrentDirectory, @"TestScripts\PowerShell");
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration()
-            {
-                RootScriptPath = rootPath
-            };
-            var host = ScriptHost.Create(environment.Object, eventManager.Object, scriptConfig, SettingsManager);
+            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration.Builder()
+                .WithHostId("abcd123")
+                .WithRootScriptPath(rootPath).Build();
+            var host = ScriptHost.Create(environment.Object, scriptConfig, SettingsManager);
             return new ScriptHostInfo(host, scriptConfig, rootPath);
         }
     }

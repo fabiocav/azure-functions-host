@@ -35,15 +35,17 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         private static Lazy<MethodInfo> _getWebHookDataMethod = new Lazy<MethodInfo>(CreateGetWebHookDataMethodInfo);
         private static bool? _standbyMode;
         private readonly WebHostMetricsLogger _metricsLogger;
-        private readonly ISecretManager _secretManager;
-        private readonly HostPerformanceManager _performanceManager;
-        private readonly WebHostSettings _webHostSettings;
+        private readonly WebHostEnvironmentSettings _webHostSettings;
         private readonly IWebJobsExceptionHandler _exceptionHandler;
-        private readonly ScriptHostConfiguration _config;
-        private readonly ISwaggerDocumentManager _swaggerDocumentManager;
         private readonly object _syncLock = new object();
+        private readonly ISecretsRepositoryFactory _secretsRepositoryFactory;
+        private readonly ISecretManagerFactory _secretsManagerFactory;
 
         private readonly WebJobsSdkExtensionHookProvider _bindingWebHookProvider = new WebJobsSdkExtensionHookProvider();
+
+        private HostPerformanceManager _performanceManager;
+        private ISwaggerDocumentManager _swaggerDocumentManager;
+        private ISecretManager _secretManager;
 
         private bool _warmupComplete = false;
         private bool _hostStarted = false;
@@ -51,30 +53,22 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         private HttpRouteCollection _httpRoutes;
         private HttpRequestManager _httpRequestManager;
 
-        public WebScriptHostManager(ScriptHostConfiguration config,
-            ISecretManagerFactory secretManagerFactory,
+        public WebScriptHostManager(ISecretManagerFactory secretManagerFactory,
             IScriptEventManager eventManager,
             ScriptSettingsManager settingsManager,
+            WebHostEnvironmentSettings environmentSettings
             WebHostSettings webHostSettings,
             IScriptHostFactory scriptHostFactory = null,
             ISecretsRepositoryFactory secretsRepositoryFactory = null)
             : base(config, settingsManager, scriptHostFactory, eventManager)
         {
-            _config = config;
             _metricsLogger = new WebHostMetricsLogger();
             _exceptionHandler = new WebScriptHostExceptionHandler(this);
-            _webHostSettings = webHostSettings;
+            _webHostSettings = environmentSettings;
 
-            var systemEventGenerator = config.HostConfig.GetService<IEventGenerator>() ?? new EventGenerator();
-            var systemTraceWriter = new SystemTraceWriter(systemEventGenerator, settingsManager, TraceLevel.Verbose);
-            if (config.TraceWriter != null)
-            {
-                config.TraceWriter = new CompositeTraceWriter(new TraceWriter[] { config.TraceWriter, systemTraceWriter });
-            }
-            else
-            {
-                config.TraceWriter = systemTraceWriter;
-            }
+            _secretsRepositoryFactory = secretsRepositoryFactory;
+            _secretsManagerFactory = secretManagerFactory;
+        }
 
             config.IsSelfHost = webHostSettings.IsSelfHost;
 
@@ -158,6 +152,35 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
         }
 
+        protected override ScriptHostConfiguration CreateHostConfiguration()
+        {
+            var configuration = ScriptConfigurationManager.BuildHostConfiguration(SettingsManager, EnvironmentSettings);
+
+            var systemEventGenerator = configuration.HostConfig.GetService<IEventGenerator>() ?? new EventGenerator();
+            var systemTraceWriter = new SystemTraceWriter(systemEventGenerator, SettingsManager, TraceLevel.Verbose);
+
+            TraceWriter traceWriter = null;
+            if (configuration.TraceWriter != null)
+            {
+                traceWriter = new CompositeTraceWriter(new TraceWriter[] { configuration.TraceWriter, systemTraceWriter });
+            }
+            else
+            {
+                traceWriter = systemTraceWriter;
+            }
+
+            configuration = configuration.ToBuilder()
+                .WithTraceWriter(traceWriter).Build();
+
+            _performanceManager = new HostPerformanceManager(SettingsManager, configuration.TraceWriter);
+            _swaggerDocumentManager = new SwaggerDocumentManager(configuration);
+
+            var secretsRepository = _secretsRepositoryFactory.Create(SettingsManager, (WebHostEnvironmentSettings)EnvironmentSettings, configuration);
+            _secretManager = _secretsManagerFactory.Create(SettingsManager, configuration.TraceWriter, secretsRepository);
+
+            return configuration;
+        }
+
         public async Task<HttpResponseMessage> HandleRequestAsync(FunctionDescriptor function, HttpRequestMessage request, CancellationToken cancellationToken)
         {
             // All authentication is assumed to have been done on the request
@@ -230,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
         }
 
-        public static void WarmUp(WebHostSettings settings, IScriptEventManager eventManager)
+        public static void WarmUp(WebHostEnvironmentSettings settings, IScriptEventManager eventManager)
         {
             var traceWriter = new FileTraceWriter(Path.Combine(settings.LogPath, "Host"), TraceLevel.Info);
             ScriptHost host = null;
@@ -266,14 +289,14 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
                 traceWriter.Info("Warm up functions deployed");
 
-                ScriptHostConfiguration config = new ScriptHostConfiguration
-                {
-                    RootScriptPath = rootPath,
-                    FileLoggingMode = FileLoggingMode.Never,
-                    RootLogPath = settings.LogPath,
-                    TraceWriter = traceWriter,
-                    FileWatchingEnabled = false
-                };
+                ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                    .WithRootScriptPath(rootPath)
+                    .WithFileLoggingMode(FileLoggingMode.Never)
+                    .WithRootLogPath(settings.LogPath)
+                    .WithTraceWriter(traceWriter)
+                    .WithFileWatchingEnabled(false)
+                    .Build();
+
                 config.HostConfig.StorageConnectionString = null;
                 config.HostConfig.DashboardConnectionString = null;
 
@@ -448,22 +471,22 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             hostConfig.DashboardConnectionString = null; // disable slow logging
         }
 
-        protected override void OnHostCreated()
+        protected override void OnHostCreated(ScriptHostConfiguration config)
         {
-            InitializeHttp();
+            InitializeHttp(config);
 
-            base.OnHostCreated();
+            base.OnHostCreated(config);
         }
 
-        protected override void OnHostStarted()
+        protected override void OnHostStarted(ScriptHostConfiguration config)
         {
             // Purge any old Function secrets
-            _secretManager.PurgeOldSecretsAsync(Instance.ScriptConfig.RootScriptPath, Instance.TraceWriter, Instance.Logger);
+            _secretManager.PurgeOldSecretsAsync(config.RootScriptPath, Instance.TraceWriter);
 
-            base.OnHostStarted();
+            base.OnHostStarted(config);
         }
 
-        private void InitializeHttp()
+        private void InitializeHttp(ScriptHostConfiguration config)
         {
             // get the registered http configuration from the extension registry
             var extensions = Instance.ScriptConfig.HostConfig.GetService<IExtensionRegistry>();
@@ -475,7 +498,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
             // since the request manager is created based on configurable
             // settings, it has to be recreated when host config changes
-            _httpRequestManager = new WebScriptHostRequestManager(httpConfig, PerformanceManager, _metricsLogger, _config.TraceWriter);
+            _httpRequestManager = new WebScriptHostRequestManager(httpConfig, PerformanceManager, _metricsLogger, config.TraceWriter);
         }
 
         private void InitializeHttpFunctions(IEnumerable<FunctionDescriptor> functions, HttpExtensionConfiguration httpConfig)

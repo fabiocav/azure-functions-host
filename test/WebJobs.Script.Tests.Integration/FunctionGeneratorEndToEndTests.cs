@@ -51,8 +51,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             functions.Add(function);
 
             // Get the Type Attributes (in this case, a TimeoutAttribute)
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            scriptConfig.FunctionTimeout = TimeSpan.FromMinutes(5);
+            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration(TimeSpan.FromMinutes(5));
             Collection<CustomAttributeBuilder> typeAttributes = ScriptHost.CreateTypeAttributes(scriptConfig);
 
             // generate the Type
@@ -100,20 +99,22 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = @"TestScripts\FunctionGeneration",
+                ScriptPath = @"TestScripts\FunctionGeneration",
                 TraceWriter = traceWriter
             };
 
             string secretsPath = Path.Combine(Path.GetTempPath(), @"FunctionTests\Secrets");
             ISecretsRepository repository = new FileSystemSecretsRepository(secretsPath);
-            WebHostSettings webHostSettings = new WebHostSettings();
+            WebHostEnvironmentSettings webHostSettings = new WebHostEnvironmentSettings();
             webHostSettings.SecretsPath = secretsPath;
             var eventManagerMock = new Mock<IScriptEventManager>();
             var secretManager = new SecretManager(SettingsManager, repository, NullTraceWriter.Instance, null);
 
-            using (var manager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), eventManagerMock.Object, SettingsManager, webHostSettings))
+            var secretManager = new SecretManager(SettingsManager, repository, NullTraceWriter.Instance);
+
+            using (var manager = new WebScriptHostManager(new TestSecretManagerFactory(secretManager), SettingsManager, webHostSettings))
             {
                 Thread runLoopThread = new Thread(_ =>
                 {

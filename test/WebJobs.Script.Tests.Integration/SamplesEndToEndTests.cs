@@ -1076,7 +1076,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 _config.Formatters.Add(new PlaintextMediaTypeFormatter());
 
                 _settingsManager = ScriptSettingsManager.Instance;
-                HostSettings = new WebHostSettings
+                HostSettings = new WebHostEnvironmentSettings
                 {
                     IsSelfHost = true,
                     ScriptPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\sample"),
@@ -1114,7 +1114,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 WaitForHost();
             }
 
-            public WebHostSettings HostSettings { get; private set; }
+            public WebHostEnvironmentSettings HostSettings { get; private set; }
 
             public CloudTableClient TableClient { get; set; }
 

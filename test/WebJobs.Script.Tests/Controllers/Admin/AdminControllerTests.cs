@@ -45,9 +45,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             hostMock = new Mock<ScriptHost>(MockBehavior.Strict, new object[] { environment, eventManager.Object, config, null });
             hostMock.Setup(p => p.Functions).Returns(testFunctions);
 
-            WebHostSettings settings = new WebHostSettings();
+            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings();
             settings.SecretsPath = _secretsDirectory.Path;
-            managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { config, new TestSecretManagerFactory(), eventManager.Object, _settingsManager, settings });
+            managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { new TestSecretManagerFactory(), _settingsManager, settings });
             managerMock.SetupGet(p => p.Instance).Returns(hostMock.Object);
 
             testController = new AdminController(managerMock.Object, settings, new TestTraceWriter(TraceLevel.Verbose), null);

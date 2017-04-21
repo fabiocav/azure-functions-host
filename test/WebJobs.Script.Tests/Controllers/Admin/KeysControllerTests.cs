@@ -46,10 +46,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             _hostMock.Setup(p => p.Functions).Returns(_testFunctions);
             _hostMock.Setup(p => p.FunctionErrors).Returns(_testFunctionErrors);
 
-            WebHostSettings settings = new WebHostSettings();
+            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings();
             settings.SecretsPath = _secretsDirectory.Path;
             _secretsManagerMock = new Mock<ISecretManager>(MockBehavior.Strict);
-            _managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { config, new TestSecretManagerFactory(_secretsManagerMock.Object), eventManager.Object, _settingsManager, settings });
+            _managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { new TestSecretManagerFactory(_secretsManagerMock.Object), _settingsManager, settings });
             _managerMock.SetupGet(p => p.Instance).Returns(_hostMock.Object);
 
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);

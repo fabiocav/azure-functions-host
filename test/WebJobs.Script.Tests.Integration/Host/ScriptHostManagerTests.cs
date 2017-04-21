@@ -38,7 +38,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             var blob1 = UpdateOutputName("testblob", "first", fixture);
 
             await fixture.Host.StopAsync();
-            var config = fixture.Host.ScriptConfig;
+            var settings = new ScriptHostEnvironmentSettings
+            {
+                ScriptPath = fixture.Host.ScriptConfig.RootScriptPath,
+                LogPath = fixture.Host.ScriptConfig.RootLogPath,
+            };
 
             ExceptionDispatchInfo exception = null;
             using (var eventManager = new ScriptEventManager())
@@ -105,7 +109,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             var fixture = new NodeEndToEndTests.TestFixture();
             await fixture.Host.StopAsync();
-            var config = fixture.Host.ScriptConfig;
+            var settings = new ScriptHostEnvironmentSettings
+            {
+                ScriptPath = fixture.Host.ScriptConfig.RootScriptPath,
+                LogPath = fixture.Host.ScriptConfig.RootLogPath,
+            };
 
             var blob = fixture.TestOutputContainer.GetBlockBlobReference("testblob");
 
@@ -199,10 +207,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public void RunAndBlock_DisposesOfHost_WhenExceptionIsThrown()
         {
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
-            {
-                RootScriptPath = Environment.CurrentDirectory
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(Environment.CurrentDirectory).Build();
 
             var eventManager = new Mock<IScriptEventManager>();
             var hostMock = new Mock<ScriptHost>(new NullScriptHostEnvironment(), eventManager.Object, config, null);
@@ -225,9 +231,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public async Task RunAndBlock_SetsLastError_WhenExceptionIsThrown()
         {
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = @"TestScripts\Empty"
+                ScriptPath = @"TestScripts\Empty"
             };
 
             var factoryMock = new Mock<IScriptHostFactory>();
@@ -275,11 +281,18 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             };
             File.WriteAllText(Path.Combine(functionDir, ScriptConstants.HostMetadataFileName), hostConfig.ToString());
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration
+            // TODO:
+            // var config = new ScriptHostConfiguration
+            // {
+            //     RootScriptPath = functionDir,
+            //     RootLogPath = logDir,
+            //     FileLoggingMode = FileLoggingMode.Always
+            // };
+
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = functionDir,
-                RootLogPath = logDir,
-                FileLoggingMode = FileLoggingMode.Always
+                ScriptPath = functionDir,
+                LogPath = logDir,
             };
 
             var eventManagerMock = new Mock<IScriptEventManager>();

@@ -30,11 +30,11 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost.Controllers
     public class AdminController : ApiController
     {
         private readonly WebScriptHostManager _scriptHostManager;
-        private readonly WebHostSettings _webHostSettings;
+        private readonly WebHostEnvironmentSettings _webHostSettings;
         private readonly TraceWriter _traceWriter;
         private readonly ILogger _logger;
 
-        public AdminController(WebScriptHostManager scriptHostManager, WebHostSettings webHostSettings, TraceWriter traceWriter, ILoggerFactory loggerFactory)
+        public AdminController(WebScriptHostManager scriptHostManager, WebHostEnvironmentSettings webHostSettings, TraceWriter traceWriter)
         {
             _scriptHostManager = scriptHostManager;
             _webHostSettings = webHostSettings;
