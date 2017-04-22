@@ -150,6 +150,11 @@ namespace Microsoft.Azure.WebJobs.Script
         internal DateTime LastDebugNotify { get; set; }
 
         /// <summary>
+        /// Gets the set of <see cref="ScriptBindingProviders"/> to use when loading functions.
+        /// </summary>
+        public ICollection<ScriptBindingProvider> BindingProviders { get; private set; }
+
+        /// <summary>
         /// Returns true if the specified name is the name of a known function,
         /// regardless of whether the function is in error.
         /// </summary>
@@ -240,21 +245,6 @@ namespace Microsoft.Azure.WebJobs.Script
 
             using (metricsLogger.LatencyEvent(MetricEventNames.HostStartupLatency))
             {
-                // read host.json and apply to JobHostConfiguration
-                string hostConfigFilePath = Path.Combine(ScriptConfig.RootScriptPath, ScriptConstants.HostMetadataFileName);
-
-                // If it doesn't exist, create an empty JSON file
-                if (!File.Exists(hostConfigFilePath))
-                {
-                    File.WriteAllText(hostConfigFilePath, "{}");
-                }
-
-                if (ScriptConfig.HostConfig.IsDevelopment || InDebugMode)
-                {
-                    // If we're in debug/development mode, use optimal debug settings
-                    ScriptConfig.HostConfig.UseDevelopmentSettings();
-                }
-
                 if (string.IsNullOrEmpty(ScriptConfig.HostConfig.HostId))
                 {
                     throw new InvalidOperationException("An 'id' must be specified in the host configuration.");
@@ -265,6 +255,7 @@ namespace Microsoft.Azure.WebJobs.Script
                 var traceMonitor = new TraceMonitor()
                     .Filter(p => { return true; })
                     .Subscribe(HandleHostError);
+
                 ScriptConfig.HostConfig.Tracing.Tracers.Add(traceMonitor);
 
                 TraceLevel hostTraceLevel = ScriptConfig.HostConfig.Tracing.ConsoleLevel;
@@ -314,9 +305,7 @@ namespace Microsoft.Azure.WebJobs.Script
                 }
 
                 var bindingProviders = LoadBindingProviders(ScriptConfig, ScriptConfig.HostConfig.HostConfigMetadata, TraceWriter);
-                ScriptConfig.BindingProviders = bindingProviders;
-
-                TraceWriter.Info(string.Format(CultureInfo.InvariantCulture, "Reading host configuration file '{0}'", hostConfigFilePath));
+                BindingProviders = bindingProviders;
 
                 if (ScriptConfig.FileWatchingEnabled)
                 {
@@ -340,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Script
                 _directorySnapshot = Directory.EnumerateDirectories(ScriptConfig.RootScriptPath).ToImmutableArray();
 
                 // Allow BindingProviders to initialize
-                foreach (var bindingProvider in ScriptConfig.BindingProviders)
+                foreach (var bindingProvider in BindingProviders)
                 {
                     try
                     {
@@ -417,7 +406,7 @@ namespace Microsoft.Azure.WebJobs.Script
             // Now all extensions have been loaded, the metadata is finalized.
             // There's a single script binding instance that services all extensions.
             // give that script binding the metadata for all loaded extensions so it can dispatch to them.
-            var generalProvider = ScriptConfig.BindingProviders.OfType<GeneralScriptBindingProvider>().First();
+            var generalProvider = BindingProviders.OfType<GeneralScriptBindingProvider>().First();
             generalProvider.CompleteInitialization();
         }
 
@@ -447,7 +436,7 @@ namespace Microsoft.Azure.WebJobs.Script
             IExtensionConfigProvider instance,
             string locationHint = null)
         {
-            JobHostConfiguration config = this.ScriptConfig.HostConfig;
+            JobHostConfiguration config = ScriptConfig.HostConfig;
 
             var type = instance.GetType();
             string name = type.Name;

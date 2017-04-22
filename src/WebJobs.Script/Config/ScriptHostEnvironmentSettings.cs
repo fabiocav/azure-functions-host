@@ -17,5 +17,13 @@ namespace Microsoft.Azure.WebJobs.Script.Config
         public string LogPath { get; set; }
 
         public TraceWriter TraceWriter { get; set; }
+
+        public virtual ScriptHostConfiguration.Builder Build(ScriptHostConfiguration.Builder configurationBuilder)
+        {
+            return configurationBuilder.WithRootScriptPath(ScriptPath)
+                .WithRootLogPath(LogPath)
+                .WithFileLoggingMode(FileLoggingMode.DebugOnly)
+                .WithTraceWriter(TraceWriter);
+        }
     }
 }

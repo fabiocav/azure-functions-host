@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -20,15 +21,13 @@ namespace Microsoft.Azure.WebJobs.Script.Config
         private static readonly TimeSpan MinTimeout = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan MaxTimeout = TimeSpan.FromMinutes(5);
 
-        public static ScriptHostConfiguration LoadHostConfiguration(ScriptSettingsManager settingsManager,  ScriptHostEnvironmentSettings environmentSettings)
+        public static ScriptHostConfiguration LoadHostConfiguration(ScriptSettingsManager settingsManager, ScriptHostEnvironmentSettings environmentSettings)
         {
-            var configuration = new ScriptHostConfiguration
-            {
-                RootScriptPath = environmentSettings.ScriptPath,
-                RootLogPath = environmentSettings.LogPath,
-                FileLoggingMode = FileLoggingMode.DebugOnly,
-                TraceWriter = environmentSettings.TraceWriter
-            };
+            var configurationBuilder = new ScriptHostConfiguration.Builder();
+
+            environmentSettings.Build(configurationBuilder);
+
+            var configuration = configurationBuilder.Build();
 
             // read host.json and apply to JobHostConfiguration
             string hostConfigFilePath = Path.Combine(configuration.RootScriptPath, ScriptConstants.HostMetadataFileName);
@@ -37,6 +36,13 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             if (!File.Exists(hostConfigFilePath))
             {
                 File.WriteAllText(hostConfigFilePath, "{}");
+            }
+
+            // TODO: || InDebugMode
+            if (configuration.HostConfig.IsDevelopment)
+            {
+                // If we're in debug/development mode, use optimal debug settings
+                configuration.HostConfig.UseDevelopmentSettings();
             }
 
             string json = File.ReadAllText(hostConfigFilePath);
@@ -52,62 +58,54 @@ namespace Microsoft.Azure.WebJobs.Script.Config
 
             configuration.HostConfig.HostConfigMetadata = hostConfig;
 
-            ApplyConfiguration(hostConfig, configuration, settingsManager);
-
-            return configuration;
+            return ApplyConfiguration(hostConfig, configuration.ToBuilder(), settingsManager);
         }
 
-        internal static void ApplyConfiguration(JObject config, ScriptHostConfiguration scriptConfig, ScriptSettingsManager settingsManager)
+        internal static ScriptHostConfiguration ApplyConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder, ScriptSettingsManager settingsManager)
         {
-            JobHostConfiguration hostConfig = scriptConfig.HostConfig;
-
             JArray functions = (JArray)config["functions"];
             if (functions != null && functions.Count > 0)
             {
-                scriptConfig.Functions = new Collection<string>();
                 foreach (var function in functions)
                 {
-                    scriptConfig.Functions.Add((string)function);
+                    configurationBuilder.AddFunction((string)function);
                 }
             }
 
             // We may already have a host id, but the one from the JSON takes precedence
-            JToken hostId = (JToken)config["id"];
+            JToken hostId = config["id"];
             if (hostId != null)
             {
                 hostConfig.HostId = (string)hostId;
             }
 
-            if (string.IsNullOrEmpty(scriptConfig.HostConfig.HostId))
+            if (string.IsNullOrEmpty(configurationBuilder.HostConfig.HostId))
             {
-                scriptConfig.HostConfig.HostId = Utility.GetDefaultHostId(settingsManager, scriptConfig);
+                hostId = Utility.GetDefaultHostId(settingsManager, configurationBuilder);
+
             }
 
             JToken fileWatchingEnabled = (JToken)config["fileWatchingEnabled"];
-            if (fileWatchingEnabled != null && fileWatchingEnabled.Type == JTokenType.Boolean)
+            if (fileWatchingEnabled != null && fileWatchingEnabled.Type == JTokenType.Boolean && (bool)fileWatchingEnabled)
             {
-                scriptConfig.FileWatchingEnabled = (bool)fileWatchingEnabled;
+                configurationBuilder.EnableFileWatching();
             }
 
             // Configure the set of watched directories, adding the standard built in
             // set to any the user may have specified
-            if (scriptConfig.WatchDirectories == null)
-            {
-                scriptConfig.WatchDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            }
-            scriptConfig.WatchDirectories.Add("node_modules");
+            configurationBuilder.AddWatchedDirectory("node_modules");
             JToken watchDirectories = config["watchDirectories"];
             if (watchDirectories != null && watchDirectories.Type == JTokenType.Array)
             {
                 foreach (JToken directory in watchDirectories.Where(p => p.Type == JTokenType.String))
                 {
-                    scriptConfig.WatchDirectories.Add((string)directory);
+                    configurationBuilder.AddWatchedDirectory((string)directory);
                 }
             }
 
             ApplySingletonConfiguration(config, hostConfig);
 
-            ApplyTracingConfiguration(config, scriptConfig, hostConfig);
+            ApplyTracingConfiguration(config, configurationBuilder, hostConfig);
 
             // Function timeout
             JToken value = null;
@@ -118,38 +116,37 @@ namespace Microsoft.Azure.WebJobs.Script.Config
                 // Only apply limits if this is Dynamic.
                 if (ScriptSettingsManager.Instance.IsDynamicSku && (requestedTimeout < MinTimeout || requestedTimeout > MaxTimeout))
                 {
-                    string message = $"{nameof(scriptConfig.FunctionTimeout)} must be between {MinTimeout} and {MaxTimeout}.";
+                    string message = $"{nameof(ScriptHostConfiguration.FunctionTimeout)} must be between {MinTimeout} and {MaxTimeout}.";
                     throw new ArgumentException(message);
                 }
 
-                scriptConfig.FunctionTimeout = requestedTimeout;
+                configurationBuilder.WithFunctionTimeout(requestedTimeout);
             }
             else if (ScriptSettingsManager.Instance.IsDynamicSku)
             {
                 // Apply a default if this is running on Dynamic.
-                scriptConfig.FunctionTimeout = MaxTimeout;
+                configurationBuilder.WithFunctionTimeout(MaxTimeout);
             }
 
-            ApplySwaggerConfiguration(config, scriptConfig);
+            ApplySwaggerConfiguration(config, configurationBuilder);
+
+            return configurationBuilder.Build();
         }
 
-        private static void ApplySwaggerConfiguration(JObject config, ScriptHostConfiguration scriptConfig)
+        private static void ApplySwaggerConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder)
         {
-            // apply swagger configuration
-            scriptConfig.SwaggerEnabled = false;
-
             var configSection = (JObject)config["swagger"];
-            JToken swaggerEnabled;
 
             if (configSection != null &&
-                configSection.TryGetValue("enabled", out swaggerEnabled) &&
-                swaggerEnabled.Type == JTokenType.Boolean)
+                configSection.TryGetValue("enabled", out JToken swaggerEnabled) &&
+                swaggerEnabled.Type == JTokenType.Boolean &&
+                (bool)swaggerEnabled)
             {
-                scriptConfig.SwaggerEnabled = (bool)swaggerEnabled;
+                configurationBuilder.EnableSwagger();
             }
         }
 
-        private static JObject ApplyTracingConfiguration(JObject config, ScriptHostConfiguration scriptConfig, JobHostConfiguration hostConfig)
+        private static JObject ApplyTracingConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder, JobHostConfiguration hostConfig)
         {
             // Apply Tracing/Logging configuration
             var configSection = (JObject)config["tracing"];
@@ -158,8 +155,7 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             {
                 if (configSection.TryGetValue("consoleLevel", out value))
                 {
-                    TraceLevel consoleLevel;
-                    if (Enum.TryParse<TraceLevel>((string)value, true, out consoleLevel))
+                    if (Enum.TryParse<TraceLevel>((string)value, true, out TraceLevel consoleLevel))
                     {
                         hostConfig.Tracing.ConsoleLevel = consoleLevel;
                     }
@@ -167,10 +163,9 @@ namespace Microsoft.Azure.WebJobs.Script.Config
 
                 if (configSection.TryGetValue("fileLoggingMode", out value))
                 {
-                    FileLoggingMode fileLoggingMode;
-                    if (Enum.TryParse<FileLoggingMode>((string)value, true, out fileLoggingMode))
+                    if (Enum.TryParse<FileLoggingMode>((string)value, true, out FileLoggingMode fileLoggingMode))
                     {
-                        scriptConfig.FileLoggingMode = fileLoggingMode;
+                        configurationBuilder.WithFileLoggingMode(fileLoggingMode);
                     }
                 }
             }
@@ -178,32 +173,34 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             return configSection;
         }
 
-        private static void ApplySingletonConfiguration(JObject config, JobHostConfiguration hostConfig)
+        private static void ApplySingletonConfiguration(JObject config, ScriptHostConfiguration.Builder hostConfig)
         {
             // Apply Singleton configuration
             JObject configSection = (JObject)config["singleton"];
             JToken value = null;
             if (configSection != null)
             {
+                var singletonConfiguration = new SingletonConfiguration();
+
                 if (configSection.TryGetValue("lockPeriod", out value))
                 {
-                    hostConfig.Singleton.LockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                    singletonConfiguration.LockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
                 if (configSection.TryGetValue("listenerLockPeriod", out value))
                 {
-                    hostConfig.Singleton.ListenerLockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                    singletonConfiguration.ListenerLockPeriod = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
                 if (configSection.TryGetValue("listenerLockRecoveryPollingInterval", out value))
                 {
-                    hostConfig.Singleton.ListenerLockRecoveryPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                    singletonConfiguration.ListenerLockRecoveryPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
                 if (configSection.TryGetValue("lockAcquisitionTimeout", out value))
                 {
-                    hostConfig.Singleton.LockAcquisitionTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                    singletonConfiguration.LockAcquisitionTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
                 if (configSection.TryGetValue("lockAcquisitionPollingInterval", out value))
                 {
-                    hostConfig.Singleton.LockAcquisitionPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                    singletonConfiguration.LockAcquisitionPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
             }
         }

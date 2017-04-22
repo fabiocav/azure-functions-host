@@ -61,13 +61,13 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             _secretsManagerFactory = secretManagerFactory;
         }
 
-        public WebScriptHostManager(ScriptHostConfiguration config, ISecretManagerFactory secretManagerFactory, ScriptSettingsManager settingsManager, WebHostEnvironmentSettings webHostSettings, IScriptHostFactory scriptHostFactory)
+        public WebScriptHostManager(ISecretManagerFactory secretManagerFactory, ScriptSettingsManager settingsManager, WebHostEnvironmentSettings webHostSettings, IScriptHostFactory scriptHostFactory)
             : this(secretManagerFactory, settingsManager, webHostSettings, scriptHostFactory, new DefaultSecretsRepositoryFactory())
         {
         }
 
-        public WebScriptHostManager(ScriptHostConfiguration config, ISecretManagerFactory secretManagerFactory, ScriptSettingsManager settingsManager, WebHostEnvironmentSettings webHostSettings)
-            : this(config, secretManagerFactory, settingsManager, webHostSettings, new ScriptHostFactory())
+        public WebScriptHostManager(ISecretManagerFactory secretManagerFactory, ScriptSettingsManager settingsManager, WebHostEnvironmentSettings environmentSettings)
+            : this(secretManagerFactory, settingsManager, environmentSettings, new ScriptHostFactory())
         {
         }
 

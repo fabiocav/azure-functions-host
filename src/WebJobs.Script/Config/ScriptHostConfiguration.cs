@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Script.Extensibility;
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Script
 {
     public class ScriptHostConfiguration
     {
-        public ScriptHostConfiguration()
+        private ScriptHostConfiguration()
         {
             HostConfig = new JobHostConfiguration();
             FileWatchingEnabled = true;
@@ -20,72 +21,82 @@ namespace Microsoft.Azure.WebJobs.Script
             RootLogPath = Path.Combine(Path.GetTempPath(), "Functions");
         }
 
-        /// <summary>
-        /// Gets or sets the <see cref="JobHostConfiguration"/>.
-        /// </summary>
-        public JobHostConfiguration HostConfig { get; set; }
+        private ScriptHostConfiguration(ScriptHostConfiguration configuration)
+        {
+            HostConfig = configuration.HostConfig;
+            RootScriptPath = configuration.RootScriptPath;
+            RootLogPath = configuration.RootLogPath;
+            TraceWriter = configuration.TraceWriter;
+            FileWatchingEnabled = configuration.FileWatchingEnabled;
+            WatchDirectories = configuration.WatchDirectories;
+            FileLoggingMode = configuration.FileLoggingMode;
+            Functions = configuration.Functions;
+            FunctionTimeout = configuration.FunctionTimeout;
+            IsSelfHost = configuration.IsSelfHost;
+            SwaggerEnabled = configuration.SwaggerEnabled;
+        }
 
         /// <summary>
-        /// Gets or sets the path to the script function directory.
+        /// Gets the <see cref="JobHostConfiguration"/>.
         /// </summary>
-        public string RootScriptPath { get; set; }
+        public JobHostConfiguration HostConfig { get; private set; }
 
         /// <summary>
-        /// Gets or sets the root path for log files.
+        /// Gets the path to the script function directory.
         /// </summary>
-        public string RootLogPath { get; set; }
+        public string RootScriptPath { get; private set; }
 
         /// <summary>
-        /// Gets or sets the custom TraceWriter to add to the trace pipeline
+        /// Gets the root path for log files.
         /// </summary>
-        public TraceWriter TraceWriter { get; set; }
+        public string RootLogPath { get; private set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the <see cref="ScriptHost"/> should
+        /// Gets the custom TraceWriter to add to the trace pipeline
+        /// </summary>
+        public TraceWriter TraceWriter { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="ScriptHost"/> should
         /// monitor file for changes (default is true). When set to true, the host will
         /// automatically react to source/config file changes. When set to false no file
         /// monitoring will be performed.
         /// </summary>
-        public bool FileWatchingEnabled { get; set; }
+        public bool FileWatchingEnabled { get; private set; }
 
         /// <summary>
-        /// Gets or sets the collection of directories (relative to RootScriptPath) that
+        /// Gets the collection of directories (relative to RootScriptPath) that
         /// should be monitored for changes. If FileWatchingEnabled is true, these directories
         /// will be monitored. When a file is added/modified/deleted in any of these
         /// directories, the host will restart.
         /// </summary>
-        public ICollection<string> WatchDirectories { get; set; }
+        public ICollection<string> WatchDirectories { get; private set; }
 
         /// <summary>
-        /// Gets or sets a value governing when logs should be written to disk.
+        /// Gets a value governing when logs should be written to disk.
         /// When enabled, logs will be written to the directory specified by
         /// <see cref="RootLogPath"/>.
         /// </summary>
-        public FileLoggingMode FileLoggingMode { get; set; }
+        public FileLoggingMode FileLoggingMode { get; private set; }
 
         /// <summary>
-        /// Gets or sets the list of functions that should be run. This list can be used to filter
+        /// Gets the list of functions that should be run. This list can be used to filter
         /// the set of functions that will be enabled - it can be a subset of the actual
         /// function directories. When left null (the default) all discovered functions will
         /// be run.
         /// </summary>
-        public ICollection<string> Functions { get; set; }
+        public ICollection<string> Functions { get; private set; }
 
         /// <summary>
-        /// Gets the set of <see cref="ScriptBindingProviders"/> to use when loading functions.
-        /// </summary>
-        public ICollection<ScriptBindingProvider> BindingProviders { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating the timeout duration for all functions. If null,
+        /// Gets a value indicating the timeout duration for all functions. If null,
         /// there is no timeout duration.
         /// </summary>
-        public TimeSpan? FunctionTimeout { get; set; }
+        public TimeSpan? FunctionTimeout { get; private set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the swagger endpoint is enabled or disabled. If true swagger is enabled, otherwise it is disabled
+        /// Gets a value indicating whether the swagger endpoint is enabled or disabled. If true swagger is enabled, otherwise it is disabled
         /// </summary>
-        public bool SwaggerEnabled { get; set; }
+        public bool SwaggerEnabled { get; private set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the host is running
@@ -93,5 +104,119 @@ namespace Microsoft.Azure.WebJobs.Script
         /// locally or via CLI.
         /// </summary>
         public bool IsSelfHost { get; set; }
+
+        public Builder ToBuilder() => Builder.FromConfiguration(this);
+
+        public class Builder
+        {
+            private readonly ScriptHostConfiguration _configuration = new ScriptHostConfiguration();
+
+            public Builder()
+            {
+            }
+
+            private Builder(ScriptHostConfiguration configuration)
+            {
+                _configuration = new ScriptHostConfiguration(configuration);
+            }
+
+            public static Builder FromConfiguration(ScriptHostConfiguration configuration)
+            {
+                return new Builder(configuration);
+            }
+
+            public Builder WithHostId(string hostId)
+            {
+                _configuration.HostConfig.HostId = hostId;
+                return this;
+            }
+
+            public Builder WithRootScriptPath(string path)
+            {
+                _configuration.RootScriptPath = path;
+                return this;
+            }
+
+            public Builder WithRootLogPath(string path)
+            {
+                _configuration.RootLogPath = path;
+                return this;
+            }
+
+            public Builder WithTraceWriter(TraceWriter traceWriter)
+            {
+                _configuration.TraceWriter = traceWriter;
+                return this;
+            }
+
+            public Builder EnableFileWatching()
+            {
+                _configuration.FileWatchingEnabled = true;
+                return this;
+            }
+
+            public Builder AddWatchedDirectory(string directory)
+            {
+                if (_configuration.WatchDirectories == null)
+                {
+                    _configuration.WatchDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                _configuration.WatchDirectories.Add(directory);
+
+                return this;
+            }
+
+            public Builder EnableSwagger()
+            {
+                _configuration.SwaggerEnabled = true;
+                return this;
+            }
+
+            public Builder WithFileLoggingMode(FileLoggingMode mode)
+            {
+                _configuration.FileLoggingMode = mode;
+                return this;
+            }
+
+            public Builder AddFunction(string functionName)
+            {
+                if (_configuration.Functions == null)
+                {
+                    _configuration.Functions = new Collection<string>();
+                }
+
+                _configuration.Functions.Add(functionName);
+                return this;
+            }
+
+            public Builder WithFunctionTimeout(TimeSpan timeout)
+            {
+                _configuration.FunctionTimeout = timeout;
+                return this;
+            }
+
+            public Builder WithSelfHostValue(bool value)
+            {
+                _configuration.IsSelfHost = value;
+                return this;
+            }
+
+            public Builder WithSingletonConfiguration(SingletonConfiguration singletonConfiguration)
+            {
+                _configuration.HostConfig.Singleton.LockPeriod = singletonConfiguration.LockPeriod;
+                _configuration.HostConfig.Singleton.ListenerLockPeriod = singletonConfiguration.ListenerLockPeriod;
+                _configuration.HostConfig.Singleton.ListenerLockRecoveryPollingInterval = singletonConfiguration.ListenerLockRecoveryPollingInterval;
+                _configuration.HostConfig.Singleton.LockAcquisitionTimeout = singletonConfiguration.LockAcquisitionTimeout;
+                _configuration.HostConfig.Singleton.LockAcquisitionPollingInterval = singletonConfiguration.LockAcquisitionPollingInterval;
+
+                return this;
+            }
+
+            public ScriptHostConfiguration Build()
+            {
+                return new ScriptHostConfiguration(_configuration);
+            }
+        }
     }
 }

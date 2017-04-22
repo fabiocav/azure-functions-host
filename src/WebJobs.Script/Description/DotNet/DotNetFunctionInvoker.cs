@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             _metricsLogger = Host.ScriptConfig.HostConfig.GetService<IMetricsLogger>();
             _functionEntryPointResolver = functionEntryPointResolver;
             _assemblyLoader = assemblyLoader;
-            _metadataResolver = metadataResolver ?? new FunctionMetadataResolver(functionMetadata, host.ScriptConfig.BindingProviders, TraceWriter);
+            _metadataResolver = metadataResolver ?? new FunctionMetadataResolver(functionMetadata, host.BindingProviders, TraceWriter);
             _compilationService = compilationServiceFactory.CreateService(functionMetadata.ScriptType, _metadataResolver);
             _inputBindings = inputBindings;
             _outputBindings = outputBindings;

@@ -53,5 +53,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
             return settings;
         }
+
+        public override ScriptHostConfiguration.Builder Build(ScriptHostConfiguration.Builder configurationBuilder)
+            => base.Build(configurationBuilder).WithSelfHostValue(IsSelfHost);
     }
 }
