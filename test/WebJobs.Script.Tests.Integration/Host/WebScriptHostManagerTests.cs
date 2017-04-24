@@ -18,6 +18,7 @@ using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.Azure.WebJobs.Script.WebHost;
 using Microsoft.Azure.WebJobs.Script.WebHost.Diagnostics;
 using Moq;
+using Moq.Protected;
 using Newtonsoft.Json.Linq;
 using WebJobs.Script.Tests;
 using Xunit;
@@ -104,26 +105,27 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             };
             File.WriteAllText(Path.Combine(functionTestDir, ScriptConstants.HostMetadataFileName), hostConfig.ToString());
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration
-            {
-                RootScriptPath = functionTestDir,
-                RootLogPath = logDir,
-                FileLoggingMode = FileLoggingMode.Always
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(functionTestDir)
+                .WithRootLogPath(logDir)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .Build();
+
             string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
             ISecretsRepository repository = new BlobStorageSecretsRepository(secretsDir, connectionString, "EmptyHost_StartsSuccessfully");
             ISecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
             WebHostEnvironmentSettings webHostSettings = new WebHostEnvironmentSettings();
             webHostSettings.SecretsPath = _secretsDirectory.Path;
 
-            ScriptHostManager hostManager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings);
+            var hostManagerMock = new Mock<WebScriptHostManager>(new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings);
+            hostManagerMock.Protected().Setup<ScriptHostConfiguration>("CreateHostConfiguration").Returns(config);
 
-            Task runTask = Task.Run(() => hostManager.RunAndBlock());
+            Task runTask = Task.Run(() => hostManagerMock.Object.RunAndBlock());
 
-            await TestHelpers.Await(() => hostManager.State == ScriptHostState.Running, timeout: 10000);
+            await TestHelpers.Await(() => hostManagerMock.Object.State == ScriptHostState.Running, timeout: 10000);
 
-            hostManager.Stop();
-            Assert.Equal(ScriptHostState.Default, hostManager.State);
+            hostManagerMock.Object.Stop();
+            Assert.Equal(ScriptHostState.Default, hostManagerMock.Object.State);
 
             // give some time for the logs to be flushed fullly
             await Task.Delay(FileTraceWriter.LogFlushIntervalMs * 3);
@@ -145,12 +147,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             string logDir = Path.Combine(_fixture.TestLogsRoot, Guid.NewGuid().ToString());
             string secretsDir = Path.Combine(_fixture.TestSecretsRoot, Guid.NewGuid().ToString());
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration
-            {
-                RootLogPath = logDir,
-                RootScriptPath = functionTestDir,
-                FileLoggingMode = FileLoggingMode.Always,
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(functionTestDir)
+                .WithRootLogPath(logDir)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .Build();
 
             ISecretsRepository repository = new FileSystemSecretsRepository(_secretsDirectory.Path);
             SecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 count++;
             }).Throws(new Exception("Kaboom!"));
 
-            ScriptHostManager hostManager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings, factoryMock.Object);
+            ScriptHostManager hostManager = new WebScriptHostManager(new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings, factoryMock.Object);
 
             Task runTask = Task.Run(() => hostManager.RunAndBlock());
 
@@ -264,16 +265,18 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         {
             var functions = new Collection<string> { "TimeoutToken" };
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
-            {
-                RootScriptPath = $@"TestScripts\CSharp",
-                TraceWriter = traceWriter,
-                FileLoggingMode = FileLoggingMode.Always,
-                Functions = functions,
-                FunctionTimeout = TimeSpan.FromSeconds(3)
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath($@"TestScripts\CSharp")
+                .WithTraceWriter(traceWriter)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .AddFunctions(functions)
+                .WithFunctionTimeout(TimeSpan.FromSeconds(3))
+                .Build();
 
-            var manager = new WebScriptHostManager(config, new TestSecretManagerFactory(), _settingsManager, new WebHostEnvironmentSettings { SecretsPath = _secretsDirectory.Path });
+            var hostManagerMock = new Mock<WebScriptHostManager>(new TestSecretManagerFactory(), _settingsManager, new WebHostEnvironmentSettings { SecretsPath = _secretsDirectory.Path });
+            hostManagerMock.Protected().Setup<ScriptHostConfiguration>("CreateHostConfiguration").Returns(config);
+
+            var manager = hostManagerMock.Object;
             Task task = Task.Run(() => { manager.RunAndBlock(); });
             await TestHelpers.Await(() => manager.State == ScriptHostState.Running);
 
@@ -328,12 +331,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 CreateTestFunctionLogs(FunctionsLogDir, "Baz");
                 CreateTestFunctionLogs(FunctionsLogDir, "Invalid");
 
-                ScriptHostConfiguration config = new ScriptHostConfiguration
-                {
-                    RootScriptPath = @"TestScripts\Node",
-                    RootLogPath = logRoot,
-                    FileLoggingMode = FileLoggingMode.Always
-                };
+                ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                    .WithRootScriptPath(@"TestScripts\Node")
+                    .WithRootLogPath(logRoot)
+                    .WithFileLoggingMode(FileLoggingMode.Always)
+                    .Build();
 
                 ISecretsRepository repository = new FileSystemSecretsRepository(SecretsPath);
                 ISecretManager secretManager = new SecretManager(_settingsManager, repository, NullTraceWriter.Instance);
@@ -343,7 +345,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 var hostConfig = config.HostConfig;
                 var testEventGenerator = new TestSystemEventGenerator();
                 hostConfig.AddService<IEventGenerator>(EventGenerator);
-                var mockHostManager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings);
+                var mockHostManager = new WebScriptHostManager(new TestSecretManagerFactory(secretManager), _settingsManager, webHostSettings);
                 HostManager = mockHostManager;
                 Task task = Task.Run(() => { HostManager.RunAndBlock(); });
 

@@ -36,12 +36,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             ApiHubTestHelper.SetDefaultConnectionFactory();
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
-            {
-                RootScriptPath = rootPath,
-                TraceWriter = TraceWriter,
-                FileLoggingMode = FileLoggingMode.Always
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(rootPath)
+                .WithTraceWriter(TraceWriter)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .Build();
 
             RequestConfiguration = new HttpConfiguration();
             RequestConfiguration.Formatters.Add(new PlaintextMediaTypeFormatter());

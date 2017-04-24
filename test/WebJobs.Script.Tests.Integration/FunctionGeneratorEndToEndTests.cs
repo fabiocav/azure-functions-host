@@ -49,8 +49,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             functions.Add(function);
 
             // Get the Type Attributes (in this case, a TimeoutAttribute)
-            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            scriptConfig.FunctionTimeout = TimeSpan.FromMinutes(5);
+            ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration(TimeSpan.FromMinutes(5));
             Collection<CustomAttributeBuilder> typeAttributes = ScriptHost.CreateTypeAttributes(scriptConfig);
 
             // generate the Type
@@ -98,9 +97,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         {
             var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = @"TestScripts\FunctionGeneration",
+                ScriptPath = @"TestScripts\FunctionGeneration",
                 TraceWriter = traceWriter
             };
 
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             var secretManager = new SecretManager(SettingsManager, repository, NullTraceWriter.Instance);
 
-            using (var manager = new WebScriptHostManager(config, new TestSecretManagerFactory(secretManager), SettingsManager, webHostSettings))
+            using (var manager = new WebScriptHostManager(new TestSecretManagerFactory(secretManager), SettingsManager, webHostSettings))
             {
                 Thread runLoopThread = new Thread(_ =>
                 {

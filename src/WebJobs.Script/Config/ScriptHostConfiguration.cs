@@ -170,6 +170,22 @@ namespace Microsoft.Azure.WebJobs.Script
                 });
             }
 
+            public Builder AddFunctions(IEnumerable<string> functionNames)
+            {
+                return UpdateConfiguration(c =>
+                {
+                    if (c.Functions == null)
+                    {
+                        c.Functions = new Collection<string>();
+                    }
+
+                    foreach (var functionName in functionNames)
+                    {
+                        c.Functions.Add(functionName);
+                    }
+                });
+            }
+
             public Builder WithFunctionTimeout(TimeSpan timeout) => UpdateConfiguration(c => c.FunctionTimeout = timeout);
 
             public Builder WithSelfHostValue(bool value) => UpdateConfiguration(c => c.IsSelfHost = value);

@@ -147,16 +147,22 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             var functions = new Collection<string>();
             functions.Add(functionName);
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath($@"TestScripts\{scriptLang}")
+                .WithTraceWriter(traceWriter)
+                .WithFileLoggingMode(FileLoggingMode.Always)
+                .WithFunctionTimeout(timeout)
+                .AddFunctions(functions)
+                .Build();
+
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = $@"TestScripts\{scriptLang}",
-                TraceWriter = traceWriter,
-                FileLoggingMode = FileLoggingMode.Always,
-                Functions = functions,
-                FunctionTimeout = timeout
+                ScriptPath = config.RootScriptPath,
+                LogPath = config.RootLogPath,
+                TraceWriter = config.TraceWriter,
             };
 
-            var scriptHostManager = new MockScriptHostManager(config);
+            var scriptHostManager = new MockScriptHostManager(config, settings);
             ThreadPool.QueueUserWorkItem((s) => scriptHostManager.RunAndBlock());
             await TestHelpers.Await(() => scriptHostManager.State == ScriptHostState.Running);
 
@@ -188,8 +194,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         private class MockScriptHostManager : ScriptHostManager
         {
-            public MockScriptHostManager(ScriptHostConfiguration config) : base(config)
+            private readonly ScriptHostConfiguration _config;
+
+            public MockScriptHostManager(ScriptHostConfiguration config, ScriptHostEnvironmentSettings settings) : base(settings)
             {
+                _config = config;
             }
 
             protected override void OnInitializeConfig(ScriptHostConfiguration config)
@@ -197,6 +206,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 base.OnInitializeConfig(config);
                 config.HostConfig.AddService<IWebJobsExceptionHandler>(new MockExceptionHandler());
             }
+
+            protected override ScriptHostConfiguration CreateHostConfiguration() => _config;
         }
     }
 }

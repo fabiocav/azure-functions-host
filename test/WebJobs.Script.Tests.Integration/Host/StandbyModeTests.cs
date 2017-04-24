@@ -46,12 +46,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
-        public void GetScriptHostConfiguration_ReturnsExpectedValue()
-        {
-            TestGetter(_webHostResolver.GetScriptHostConfiguration);
-        }
-
-        [Fact]
         public void GetSecretManager_ReturnsExpectedValue()
         {
             TestGetter(_webHostResolver.GetSecretManager);

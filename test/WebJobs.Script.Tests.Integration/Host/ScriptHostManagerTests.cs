@@ -37,11 +37,15 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             var blob1 = UpdateOutputName("testblob", "first", fixture);
 
             await fixture.Host.StopAsync();
-            var config = fixture.Host.ScriptConfig;
+            var settings = new ScriptHostEnvironmentSettings
+            {
+                ScriptPath = fixture.Host.ScriptConfig.RootScriptPath,
+                LogPath = fixture.Host.ScriptConfig.RootLogPath,
+            };
 
             ExceptionDispatchInfo exception = null;
 
-            using (var manager = new ScriptHostManager(config))
+            using (var manager = new ScriptHostManager(settings))
             {
                 // Background task to run while the main thread is pumping events at RunAndBlock().
                 Thread t = new Thread(_ =>
@@ -104,13 +108,17 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             var fixture = new NodeEndToEndTests.TestFixture();
             await fixture.Host.StopAsync();
-            var config = fixture.Host.ScriptConfig;
+            var settings = new ScriptHostEnvironmentSettings
+            {
+                ScriptPath = fixture.Host.ScriptConfig.RootScriptPath,
+                LogPath = fixture.Host.ScriptConfig.RootLogPath,
+            };
 
             var blob = fixture.TestOutputContainer.GetBlockBlobReference("testblob");
 
             ExceptionDispatchInfo exception = null;
 
-            using (var manager = new ScriptHostManager(config))
+            using (var manager = new ScriptHostManager(settings))
             {
                 // Background task to run while the main thread is pumping events at RunAndBlock().
                 Thread t = new Thread(_ =>
@@ -186,10 +194,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public void RunAndBlock_DisposesOfHost_WhenExceptionIsThrown()
         {
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
-            {
-                RootScriptPath = Environment.CurrentDirectory
-            };
+            ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                .WithRootScriptPath(Environment.CurrentDirectory).Build();
 
             var hostMock = new Mock<ScriptHost>(new NullScriptHostEnvironment(), config, null);
             var factoryMock = new Mock<IScriptHostFactory>();
@@ -211,9 +217,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [Fact]
         public async Task RunAndBlock_SetsLastError_WhenExceptionIsThrown()
         {
-            ScriptHostConfiguration config = new ScriptHostConfiguration()
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = @"TestScripts\Empty"
+                ScriptPath = @"TestScripts\Empty"
             };
 
             var factoryMock = new Mock<IScriptHostFactory>();
@@ -221,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 Throw = true
             };
-            var hostManager = new ScriptHostManager(config, _settingsManager, scriptHostFactory);
+            var hostManager = new ScriptHostManager(_settingsManager, scriptHostFactory, settings);
             Task taskIgnore = Task.Run(() => hostManager.RunAndBlock());
 
             // we expect a host exception immediately
@@ -260,13 +266,21 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             };
             File.WriteAllText(Path.Combine(functionDir, ScriptConstants.HostMetadataFileName), hostConfig.ToString());
 
-            ScriptHostConfiguration config = new ScriptHostConfiguration
+            // TODO:
+            // var config = new ScriptHostConfiguration
+            // {
+            //     RootScriptPath = functionDir,
+            //     RootLogPath = logDir,
+            //     FileLoggingMode = FileLoggingMode.Always
+            // };
+
+            var settings = new ScriptHostEnvironmentSettings
             {
-                RootScriptPath = functionDir,
-                RootLogPath = logDir,
-                FileLoggingMode = FileLoggingMode.Always
+                ScriptPath = functionDir,
+                LogPath = logDir,
             };
-            ScriptHostManager hostManager = new ScriptHostManager(config);
+
+            ScriptHostManager hostManager = new ScriptHostManager(settings);
 
             Task runTask = Task.Run(() => hostManager.RunAndBlock());
 
