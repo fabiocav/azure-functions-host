@@ -4,21 +4,27 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Azure.WebJobs.Script.Extensibility;
 
 namespace Microsoft.Azure.WebJobs.Script
 {
     public class ScriptHostConfiguration
     {
-        private ScriptHostConfiguration()
+        public ScriptHostConfiguration()
         {
             HostConfig = new JobHostConfiguration();
             FileWatchingEnabled = true;
             FileLoggingMode = FileLoggingMode.Never;
             RootScriptPath = Environment.CurrentDirectory;
             RootLogPath = Path.Combine(Path.GetTempPath(), "Functions");
+        }
+
+        internal ScriptHostConfiguration(TimeSpan? functionTimeout)
+            : this()
+        {
+            FunctionTimeout = functionTimeout;
         }
 
         private ScriptHostConfiguration(ScriptHostConfiguration configuration)
@@ -99,15 +105,15 @@ namespace Microsoft.Azure.WebJobs.Script
         public bool SwaggerEnabled { get; private set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the host is running
+        /// Gets a value indicating whether the host is running
         /// outside of the normal Azure hosting environment. E.g. when running
         /// locally or via CLI.
         /// </summary>
-        public bool IsSelfHost { get; set; }
+        public bool IsSelfHost { get; private set; }
 
         public Builder ToBuilder() => Builder.FromConfiguration(this);
 
-        public class Builder
+        public sealed class Builder
         {
             private readonly ScriptHostConfiguration _configuration = new ScriptHostConfiguration();
 
@@ -125,35 +131,15 @@ namespace Microsoft.Azure.WebJobs.Script
                 return new Builder(configuration);
             }
 
-            public Builder WithHostId(string hostId)
-            {
-                _configuration.HostConfig.HostId = hostId;
-                return this;
-            }
+            public Builder WithHostId(string hostId) => UpdateConfiguration(c => c.HostConfig.HostId = hostId);
 
-            public Builder WithRootScriptPath(string path)
-            {
-                _configuration.RootScriptPath = path;
-                return this;
-            }
+            public Builder WithRootScriptPath(string path) => UpdateConfiguration(c => c.RootScriptPath = path);
 
-            public Builder WithRootLogPath(string path)
-            {
-                _configuration.RootLogPath = path;
-                return this;
-            }
+            public Builder WithRootLogPath(string path) => UpdateConfiguration(c => c.RootLogPath = path);
 
-            public Builder WithTraceWriter(TraceWriter traceWriter)
-            {
-                _configuration.TraceWriter = traceWriter;
-                return this;
-            }
+            public Builder WithTraceWriter(TraceWriter traceWriter) => UpdateConfiguration(c => c.TraceWriter = traceWriter);
 
-            public Builder EnableFileWatching()
-            {
-                _configuration.FileWatchingEnabled = true;
-                return this;
-            }
+            public Builder WithFileWatchingEnabled(bool enabled) => UpdateConfiguration(c => c.FileWatchingEnabled = enabled);
 
             public Builder AddWatchedDirectory(string directory)
             {
@@ -167,38 +153,32 @@ namespace Microsoft.Azure.WebJobs.Script
                 return this;
             }
 
-            public Builder EnableSwagger()
-            {
-                _configuration.SwaggerEnabled = true;
-                return this;
-            }
+            public Builder EnableSwagger() => UpdateConfiguration(c => c.SwaggerEnabled = true);
 
-            public Builder WithFileLoggingMode(FileLoggingMode mode)
-            {
-                _configuration.FileLoggingMode = mode;
-                return this;
-            }
+            public Builder WithFileLoggingMode(FileLoggingMode mode) => UpdateConfiguration(c => c.FileLoggingMode = mode);
 
             public Builder AddFunction(string functionName)
             {
-                if (_configuration.Functions == null)
+                return UpdateConfiguration(c =>
                 {
-                    _configuration.Functions = new Collection<string>();
-                }
+                    if (c.Functions == null)
+                    {
+                        c.Functions = new Collection<string>();
+                    }
 
-                _configuration.Functions.Add(functionName);
-                return this;
+                    c.Functions.Add(functionName);
+                });
             }
 
-            public Builder WithFunctionTimeout(TimeSpan timeout)
-            {
-                _configuration.FunctionTimeout = timeout;
-                return this;
-            }
+            public Builder WithFunctionTimeout(TimeSpan timeout) => UpdateConfiguration(c => c.FunctionTimeout = timeout);
 
-            public Builder WithSelfHostValue(bool value)
+            public Builder WithSelfHostValue(bool value) => UpdateConfiguration(c => c.IsSelfHost = value);
+
+            public Builder WithConsoleTracingLevel(TraceLevel level) => UpdateConfiguration(c => c.HostConfig.Tracing.ConsoleLevel = level);
+
+            private Builder UpdateConfiguration(Action<ScriptHostConfiguration> handler)
             {
-                _configuration.IsSelfHost = value;
+                handler(_configuration);
                 return this;
             }
 

@@ -104,13 +104,13 @@ namespace Microsoft.Azure.WebJobs.Script
             return delay;
         }
 
-        internal static string GetDefaultHostId(ScriptSettingsManager settingsManager, ScriptHostConfiguration scriptConfig)
+        internal static string GetDefaultHostId(ScriptSettingsManager settingsManager, bool isSelfHost, string rootScriptPath)
         {
             // We're setting the default here on the newly created configuration
             // If the user has explicitly set the HostID via host.json, it will overwrite
             // what we set here
             string hostId = null;
-            if (scriptConfig.IsSelfHost)
+            if (isSelfHost)
             {
                 // When running locally, derive a stable host ID from machine name
                 // and root path. We use a hash rather than the path itself to ensure
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Script
                 string sanitizedMachineName = Environment.MachineName
                     .Where(char.IsLetterOrDigit)
                     .Aggregate(new StringBuilder(), (b, c) => b.Append(c)).ToString();
-                hostId = $"{sanitizedMachineName}-{Math.Abs(scriptConfig.RootScriptPath.GetHashCode())}";
+                hostId = $"{sanitizedMachineName}-{Math.Abs(rootScriptPath.GetHashCode())}";
             }
             else if (!string.IsNullOrEmpty(settingsManager.AzureWebsiteUniqueSlotName))
             {

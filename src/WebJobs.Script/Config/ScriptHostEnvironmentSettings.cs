@@ -16,6 +16,13 @@ namespace Microsoft.Azure.WebJobs.Script.Config
 
         public string LogPath { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the host is running
+        /// outside of the normal Azure hosting environment. E.g. when running
+        /// locally or via CLI.
+        /// </summary>
+        public bool IsSelfHost { get; set; }
+
         public TraceWriter TraceWriter { get; set; }
 
         public virtual ScriptHostConfiguration.Builder Build(ScriptHostConfiguration.Builder configurationBuilder)
@@ -23,7 +30,8 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             return configurationBuilder.WithRootScriptPath(ScriptPath)
                 .WithRootLogPath(LogPath)
                 .WithFileLoggingMode(FileLoggingMode.DebugOnly)
-                .WithTraceWriter(TraceWriter);
+                .WithTraceWriter(TraceWriter)
+                .WithSelfHostValue(IsSelfHost);
         }
     }
 }

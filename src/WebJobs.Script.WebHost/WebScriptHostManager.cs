@@ -127,28 +127,31 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         protected override ScriptHostConfiguration CreateHostConfiguration()
         {
-            var config = ScriptConfigurationManager.LoadHostConfiguration(SettingsManager, EnvironmentSettings);
+            var configuration = ScriptConfigurationManager.BuildHostConfiguration(SettingsManager, EnvironmentSettings);
 
-            var systemEventGenerator = config.HostConfig.GetService<IEventGenerator>() ?? new EventGenerator();
+            var systemEventGenerator = configuration.HostConfig.GetService<IEventGenerator>() ?? new EventGenerator();
             var systemTraceWriter = new SystemTraceWriter(systemEventGenerator, SettingsManager, TraceLevel.Verbose);
-            if (config.TraceWriter != null)
+
+            TraceWriter traceWriter = null;
+            if (configuration.TraceWriter != null)
             {
-                config.TraceWriter = new CompositeTraceWriter(new TraceWriter[] { config.TraceWriter, systemTraceWriter });
+                traceWriter = new CompositeTraceWriter(new TraceWriter[] { configuration.TraceWriter, systemTraceWriter });
             }
             else
             {
-                config.TraceWriter = systemTraceWriter;
+                traceWriter = systemTraceWriter;
             }
 
-            config.IsSelfHost = ((WebHostEnvironmentSettings)EnvironmentSettings).IsSelfHost;
+            configuration = configuration.ToBuilder()
+                .WithTraceWriter(traceWriter).Build();
 
-            _performanceManager = new HostPerformanceManager(SettingsManager, config.TraceWriter);
-            _swaggerDocumentManager = new SwaggerDocumentManager(config);
+            _performanceManager = new HostPerformanceManager(SettingsManager, configuration.TraceWriter);
+            _swaggerDocumentManager = new SwaggerDocumentManager(configuration);
 
-            var secretsRepository = _secretsRepositoryFactory.Create(SettingsManager, (WebHostEnvironmentSettings)EnvironmentSettings, config);
-            _secretManager = _secretsManagerFactory.Create(SettingsManager, config.TraceWriter, secretsRepository);
+            var secretsRepository = _secretsRepositoryFactory.Create(SettingsManager, (WebHostEnvironmentSettings)EnvironmentSettings, configuration);
+            _secretManager = _secretsManagerFactory.Create(SettingsManager, configuration.TraceWriter, secretsRepository);
 
-            return config;
+            return configuration;
         }
 
         public async Task<HttpResponseMessage> HandleRequestAsync(FunctionDescriptor function, HttpRequestMessage request, CancellationToken cancellationToken)
@@ -248,14 +251,14 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
                 traceWriter.Info("Warm up functions deployed");
 
-                ScriptHostConfiguration config = new ScriptHostConfiguration
-                {
-                    RootScriptPath = rootPath,
-                    FileLoggingMode = FileLoggingMode.Never,
-                    RootLogPath = settings.LogPath,
-                    TraceWriter = traceWriter,
-                    FileWatchingEnabled = false
-                };
+                ScriptHostConfiguration config = new ScriptHostConfiguration.Builder()
+                    .WithRootScriptPath(rootPath)
+                    .WithFileLoggingMode(FileLoggingMode.Never)
+                    .WithRootLogPath(settings.LogPath)
+                    .WithTraceWriter(traceWriter)
+                    .WithFileWatchingEnabled(false)
+                    .Build();
+
                 config.HostConfig.StorageConnectionString = null;
                 config.HostConfig.DashboardConnectionString = null;
 

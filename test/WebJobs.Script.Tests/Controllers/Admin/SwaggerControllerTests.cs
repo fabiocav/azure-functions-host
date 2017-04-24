@@ -24,31 +24,22 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers.Admin
 {
     public class SwaggerControllerTests
     {
-        private readonly ScriptSettingsManager _settingsManager;
         private readonly TempDirectory _secretsDirectory = new TempDirectory();
         private Mock<ScriptHost> _hostMock;
         private Mock<WebScriptHostManager> _managerMock;
         private Collection<FunctionDescriptor> _testFunctions;
         private SwaggerController _testController;
         private Mock<ISwaggerDocumentManager> _swaggerDocumentManagerMock;
-        private ScriptHostConfiguration _config = new ScriptHostConfiguration();
 
         public SwaggerControllerTests()
         {
-            _settingsManager = ScriptSettingsManager.Instance;
             _testFunctions = new Collection<FunctionDescriptor>();
-            var environment = new NullScriptHostEnvironment();
-            _hostMock = new Mock<ScriptHost>(MockBehavior.Strict, new object[] { environment, _config, null });
-            _hostMock.Setup(p => p.Functions).Returns(_testFunctions);
-            _hostMock.Object.ScriptConfig.SwaggerEnabled = true;
 
-            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings();
-            settings.SecretsPath = _secretsDirectory.Path;
-            _managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { _config, new TestSecretManagerFactory(), _settingsManager, settings });
-            _managerMock.SetupGet(p => p.Instance).Returns(_hostMock.Object);
-            _swaggerDocumentManagerMock = new Mock<ISwaggerDocumentManager>(MockBehavior.Strict);
-            var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
-            _testController = new SwaggerController(_swaggerDocumentManagerMock.Object, _managerMock.Object, traceWriter);
+            var testData = GetTestTargets(_testFunctions, true);
+            _hostMock = testData.HostMock;
+            _managerMock = testData.HostManagerMock;
+            _swaggerDocumentManagerMock = testData.DocumentManagerMock;
+            _testController = testData.Controller;
         }
 
         [Fact]
@@ -110,11 +101,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers.Admin
         [Fact]
         public async Task GetSwaggerDocumentAsync_ReturnsNotFound_WhenDisabled()
         {
-            _hostMock.Object.ScriptConfig.SwaggerEnabled = false;
+            var testData = GetTestTargets(_testFunctions, false);
             JObject json = new JObject();
-            _testController.Request = new HttpRequestMessage(HttpMethod.Get, "https://local/admin/host/swagger/default");
-            _swaggerDocumentManagerMock.Setup(p => p.GetSwaggerDocumentAsync()).ReturnsAsync(json);
-            var result = (NotFoundResult)await _testController.GetSwaggerDocumentAsync();
+            testData.Controller.Request = new HttpRequestMessage(HttpMethod.Get, "https://local/admin/host/swagger/default");
+            testData.DocumentManagerMock.Setup(p => p.GetSwaggerDocumentAsync()).ReturnsAsync(json);
+            var result = (NotFoundResult)await testData.Controller.GetSwaggerDocumentAsync();
             Assert.IsAssignableFrom(typeof(NotFoundResult), result);
         }
 
@@ -164,6 +155,31 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Controllers.Admin
             _swaggerDocumentManagerMock.Setup(p => p.DeleteSwaggerDocumentAsync()).Throws(new Exception("TestException"));
             Exception result = await Assert.ThrowsAsync<Exception>(() => _testController.DeleteSwaggerDocumentAsync());
             Assert.Equal("TestException", result.Message);
+        }
+
+        private(SwaggerController Controller, Mock<ISwaggerDocumentManager> DocumentManagerMock, Mock<ScriptHost> HostMock, Mock<WebScriptHostManager> HostManagerMock) GetTestTargets(Collection<FunctionDescriptor> testFunctions, bool swaggerEnabled)
+        {
+            var builder = new ScriptHostConfiguration.Builder();
+            if (swaggerEnabled)
+            {
+                builder.EnableSwagger();
+            }
+            ScriptHostConfiguration config = builder.Build();
+
+            var settingsManager = new ScriptSettingsManager();
+            var environment = new NullScriptHostEnvironment();
+            var hostMock = new Mock<ScriptHost>(MockBehavior.Strict, new object[] { environment, config, null });
+            hostMock.Setup(p => p.Functions).Returns(testFunctions);
+
+            WebHostEnvironmentSettings settings = new WebHostEnvironmentSettings();
+            settings.SecretsPath = _secretsDirectory.Path;
+            var managerMock = new Mock<WebScriptHostManager>(MockBehavior.Strict, new object[] { new TestSecretManagerFactory(), settingsManager, settings });
+            managerMock.SetupGet(p => p.Instance).Returns(hostMock.Object);
+            var swaggerDocumentManagerMock = new Mock<ISwaggerDocumentManager>(MockBehavior.Strict);
+            var traceWriter = new TestTraceWriter(TraceLevel.Verbose);
+            var testController = new SwaggerController(swaggerDocumentManagerMock.Object, managerMock.Object, traceWriter);
+
+            return (testController, swaggerDocumentManagerMock, hostMock, managerMock);
         }
     }
 }

@@ -37,8 +37,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 string swaggerDocument = @"{}";
                 File.WriteAllText(Path.Combine(swaggerDirectoryName.Path, ScriptConstants.SwaggerFileName), swaggerDocument);
-                _scriptConfig.RootScriptPath = directory.Path;
-                var swaggerDocumentManager = new SwaggerDocumentManager(_scriptConfig);
+                ScriptHostConfiguration config = _scriptConfig.ToBuilder().WithRootScriptPath(directory.Path).Build();
+                var swaggerDocumentManager = new SwaggerDocumentManager(config);
                 var document = await swaggerDocumentManager.GetSwaggerDocumentAsync();
                 Assert.Equal(JObject.Parse(swaggerDocument), document);
             }
@@ -50,8 +50,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             using (var directory = new TempDirectory())
             {
                 JObject emptyObject = null;
-                _scriptConfig.RootScriptPath = directory.Path;
-                var swaggerDocumentManager = new SwaggerDocumentManager(_scriptConfig);
+                ScriptHostConfiguration config = _scriptConfig.ToBuilder().WithRootScriptPath(directory.Path).Build();
+                var swaggerDocumentManager = new SwaggerDocumentManager(config);
                 var document = await swaggerDocumentManager.GetSwaggerDocumentAsync();
                 Assert.Equal(emptyObject, document);
             }
@@ -62,8 +62,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         {
             using (var directory = new TempDirectory())
             {
-                _scriptConfig.RootScriptPath = directory.Path;
-                var swaggerDocumentManager = new SwaggerDocumentManager(_scriptConfig);
+                ScriptHostConfiguration config = _scriptConfig.ToBuilder().WithRootScriptPath(directory.Path).Build();
+                var swaggerDocumentManager = new SwaggerDocumentManager(config);
                 var deleteResult = await swaggerDocumentManager.DeleteSwaggerDocumentAsync();
                 Assert.Equal(false, deleteResult);
             }
@@ -78,8 +78,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 string swaggerDocument = @"{}";
                 File.WriteAllText(Path.Combine(swaggerDirectoryName.Path, ScriptConstants.SwaggerFileName), swaggerDocument);
-                _scriptConfig.RootScriptPath = directory.Path;
-                var swaggerDocumentManager = new SwaggerDocumentManager(_scriptConfig);
+                ScriptHostConfiguration config = _scriptConfig.ToBuilder().WithRootScriptPath(directory.Path).Build();
+                var swaggerDocumentManager = new SwaggerDocumentManager(config);
                 var deleteResult = await swaggerDocumentManager.DeleteSwaggerDocumentAsync();
                 Assert.Equal(true, deleteResult);
             }
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                                                     'version': '1.0.0'
                                                     }
                                             }";
-                _scriptConfig.RootScriptPath = directory.Path;
-                var swaggerDocumentManager = new SwaggerDocumentManager(_scriptConfig);
+                ScriptHostConfiguration config = _scriptConfig.ToBuilder().WithRootScriptPath(directory.Path).Build();
+                var swaggerDocumentManager = new SwaggerDocumentManager(config);
                 var updatedContent = await swaggerDocumentManager.AddOrUpdateSwaggerDocumentAsync(JObject.Parse(swaggerDocument));
                 string swaggerFilePath = Path.Combine(directory.Path, ScriptConstants.AzureFunctionsSystemDirectoryName, ScriptConstants.SwaggerDirectoryName, ScriptConstants.SwaggerFileName);
                 string updatedFile = File.ReadAllText(swaggerFilePath);

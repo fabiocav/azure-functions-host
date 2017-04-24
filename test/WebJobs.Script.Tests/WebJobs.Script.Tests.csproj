@@ -420,6 +420,7 @@
     <Compile Include="Binding\SendGridScriptBindingProviderTests.cs" />
     <Compile Include="Binding\ServiceBusScriptBindingProviderTests.cs" />
     <Compile Include="Binding\TwilioScriptBindingProviderTests.cs" />
+    <Compile Include="Configuration\ScriptConfigurationManagerTests.cs" />
     <Compile Include="Controllers\Admin\AdminControllerTests.cs" />
     <Compile Include="Controllers\Admin\KeysControllerTests.cs" />
     <Compile Include="Controllers\Admin\SwaggerControllerTests.cs" />

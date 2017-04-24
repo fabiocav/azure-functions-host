@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Config
         private static readonly TimeSpan MinTimeout = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan MaxTimeout = TimeSpan.FromMinutes(5);
 
-        public static ScriptHostConfiguration LoadHostConfiguration(ScriptSettingsManager settingsManager, ScriptHostEnvironmentSettings environmentSettings)
+        public static ScriptHostConfiguration BuildHostConfiguration(ScriptSettingsManager settingsManager, ScriptHostEnvironmentSettings environmentSettings)
         {
             var configurationBuilder = new ScriptHostConfiguration.Builder();
 
@@ -58,10 +58,11 @@ namespace Microsoft.Azure.WebJobs.Script.Config
 
             configuration.HostConfig.HostConfigMetadata = hostConfig;
 
-            return ApplyConfiguration(hostConfig, configuration.ToBuilder(), settingsManager);
+            return ApplyConfiguration(hostConfig, environmentSettings, configuration.ToBuilder(), settingsManager);
         }
 
-        internal static ScriptHostConfiguration ApplyConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder, ScriptSettingsManager settingsManager)
+        internal static ScriptHostConfiguration ApplyConfiguration(JObject config, ScriptHostEnvironmentSettings environmentSettings,
+            ScriptHostConfiguration.Builder configurationBuilder, ScriptSettingsManager settingsManager)
         {
             JArray functions = (JArray)config["functions"];
             if (functions != null && functions.Count > 0)
@@ -73,22 +74,18 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             }
 
             // We may already have a host id, but the one from the JSON takes precedence
-            JToken hostId = config["id"];
-            if (hostId != null)
+            string hostId = config["id"]?.ToString();
+            if (string.IsNullOrEmpty(hostId))
             {
-                hostConfig.HostId = (string)hostId;
+                hostId = Utility.GetDefaultHostId(settingsManager, environmentSettings.IsSelfHost, environmentSettings.ScriptPath);
             }
 
-            if (string.IsNullOrEmpty(configurationBuilder.HostConfig.HostId))
-            {
-                hostId = Utility.GetDefaultHostId(settingsManager, configurationBuilder);
+            configurationBuilder.WithHostId(hostId);
 
-            }
-
-            JToken fileWatchingEnabled = (JToken)config["fileWatchingEnabled"];
-            if (fileWatchingEnabled != null && fileWatchingEnabled.Type == JTokenType.Boolean && (bool)fileWatchingEnabled)
+            JToken fileWatchingEnabled = config["fileWatchingEnabled"];
+            if (fileWatchingEnabled != null && fileWatchingEnabled.Type == JTokenType.Boolean)
             {
-                configurationBuilder.EnableFileWatching();
+                configurationBuilder.WithFileWatchingEnabled((bool)fileWatchingEnabled);
             }
 
             // Configure the set of watched directories, adding the standard built in
@@ -103,18 +100,17 @@ namespace Microsoft.Azure.WebJobs.Script.Config
                 }
             }
 
-            ApplySingletonConfiguration(config, hostConfig);
+            ApplySingletonConfiguration(config, configurationBuilder);
 
-            ApplyTracingConfiguration(config, configurationBuilder, hostConfig);
+            ApplyTracingConfiguration(config, configurationBuilder);
 
             // Function timeout
-            JToken value = null;
-            if (config.TryGetValue("functionTimeout", out value))
+            if (config.TryGetValue("functionTimeout", out JToken value))
             {
                 TimeSpan requestedTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
 
                 // Only apply limits if this is Dynamic.
-                if (ScriptSettingsManager.Instance.IsDynamicSku && (requestedTimeout < MinTimeout || requestedTimeout > MaxTimeout))
+                if (settingsManager.IsDynamicSku && (requestedTimeout < MinTimeout || requestedTimeout > MaxTimeout))
                 {
                     string message = $"{nameof(ScriptHostConfiguration.FunctionTimeout)} must be between {MinTimeout} and {MaxTimeout}.";
                     throw new ArgumentException(message);
@@ -122,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Script.Config
 
                 configurationBuilder.WithFunctionTimeout(requestedTimeout);
             }
-            else if (ScriptSettingsManager.Instance.IsDynamicSku)
+            else if (settingsManager.IsDynamicSku)
             {
                 // Apply a default if this is running on Dynamic.
                 configurationBuilder.WithFunctionTimeout(MaxTimeout);
@@ -146,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Script.Config
             }
         }
 
-        private static JObject ApplyTracingConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder, JobHostConfiguration hostConfig)
+        private static JObject ApplyTracingConfiguration(JObject config, ScriptHostConfiguration.Builder configurationBuilder)
         {
             // Apply Tracing/Logging configuration
             var configSection = (JObject)config["tracing"];
@@ -157,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Script.Config
                 {
                     if (Enum.TryParse<TraceLevel>((string)value, true, out TraceLevel consoleLevel))
                     {
-                        hostConfig.Tracing.ConsoleLevel = consoleLevel;
+                        configurationBuilder.WithConsoleTracingLevel(consoleLevel);
                     }
                 }
 
@@ -202,6 +198,8 @@ namespace Microsoft.Azure.WebJobs.Script.Config
                 {
                     singletonConfiguration.LockAcquisitionPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
+
+                hostConfig.WithSingletonConfiguration(singletonConfiguration);
             }
         }
     }

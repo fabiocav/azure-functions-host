@@ -10,13 +10,6 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
     public class WebHostEnvironmentSettings : ScriptHostEnvironmentSettings
     {
-        /// <summary>
-        /// Gets or sets a value indicating whether the host is running
-        /// outside of the normal Azure hosting environment. E.g. when running
-        /// locally or via CLI.
-        /// </summary>
-        public bool IsSelfHost { get; set; }
-
         public string SecretsPath { get; set; }
 
         /// <summary>
@@ -53,8 +46,5 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
             return settings;
         }
-
-        public override ScriptHostConfiguration.Builder Build(ScriptHostConfiguration.Builder configurationBuilder)
-            => base.Build(configurationBuilder).WithSelfHostValue(IsSelfHost);
     }
 }

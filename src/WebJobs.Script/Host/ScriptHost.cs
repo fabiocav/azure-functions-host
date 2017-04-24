@@ -59,7 +59,9 @@ namespace Microsoft.Azure.WebJobs.Script
             scriptConfig = scriptConfig ?? new ScriptHostConfiguration();
             if (!Path.IsPathRooted(scriptConfig.RootScriptPath))
             {
-                scriptConfig.RootScriptPath = Path.Combine(Environment.CurrentDirectory, scriptConfig.RootScriptPath);
+                scriptConfig = scriptConfig.ToBuilder()
+                    .WithRootScriptPath(Path.Combine(Environment.CurrentDirectory, scriptConfig.RootScriptPath))
+                    .Build();
             }
             ScriptConfig = scriptConfig;
 

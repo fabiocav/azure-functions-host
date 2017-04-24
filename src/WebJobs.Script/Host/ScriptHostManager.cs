@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Script
             return State == ScriptHostState.Created || State == ScriptHostState.Running;
         }
 
-        protected virtual ScriptHostConfiguration CreateHostConfiguration() => ScriptConfigurationManager.LoadHostConfiguration(_settingsManager, _environmentSettings);
+        protected virtual ScriptHostConfiguration CreateHostConfiguration() => ScriptConfigurationManager.BuildHostConfiguration(_settingsManager, _environmentSettings);
 
         public void RunAndBlock(CancellationToken cancellationToken = default(CancellationToken))
         {
