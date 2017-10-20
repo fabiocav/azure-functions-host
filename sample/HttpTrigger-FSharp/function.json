@@ -1,5 +1,5 @@
 {
-    "excluded": true,
+    "excluded": false,
     "bindings": [
         {
             "type": "httpTrigger",

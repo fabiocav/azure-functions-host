@@ -77,6 +77,13 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="CopyFsharpDependencies" AfterTargets="Build">
+    <ItemGroup>
+      <FSharpDataFiles Include="$(UserProfile)/.nuget/packages/fsharp.core/4.2.3/lib/netstandard1.6/FSharp.Core.*data" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FSharpDataFiles)" DestinationFiles="@(FSharpDataFiles->'$(OutDir)/%(Filename)%(Extension)')" />
+  </Target>
+
   <!--This target copies the contract assemblies we need to reference as part of function compilation-->
   <!-- Temporarily commented out since we're not using contract assemblies -->
   <!--<Target Name="CopyCompilationReferenceFiles" AfterTargets="Build">
