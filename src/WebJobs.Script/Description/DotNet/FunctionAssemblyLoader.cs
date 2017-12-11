@@ -62,6 +62,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                     result = context.ResolveAssembly(args.Name);
                 }
 
+                // TODO: FACAVALASMLOAD Apply/resolve using function redirection rules.
+
                 // If we were unable to resolve the assembly, apply the current App Domain policy and attempt to load it.
                 // This allows us to correctly handle retargetable assemblies, redirects, etc.
                 if (result == null)
