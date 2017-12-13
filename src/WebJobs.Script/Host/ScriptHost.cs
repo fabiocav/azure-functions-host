@@ -1382,8 +1382,110 @@ namespace Microsoft.Azure.WebJobs.Script
                 }
             }
 
-            // Apply Singleton configuration
-            JObject configSection = (JObject)config["singleton"];
+            ApplySingletonConfiguration(config, hostConfig);
+
+            ApplyHostHealthMonitorConfiguration(config, scriptConfig);
+
+            ApplyTracingConfiguration(config, scriptConfig, hostConfig);
+
+            ApplyAssemblyConfiguration(config, scriptConfig, hostConfig);
+
+            if (config.TryGetValue("functionTimeout", out JToken value))
+            {
+                TimeSpan requestedTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+
+                // Only apply limits if this is Dynamic.
+                if (ScriptSettingsManager.Instance.IsDynamicSku && (requestedTimeout < MinFunctionTimeout || requestedTimeout > MaxFunctionTimeout))
+                {
+                    string message = $"{nameof(scriptConfig.FunctionTimeout)} must be between {MinFunctionTimeout} and {MaxFunctionTimeout}.";
+                    throw new ArgumentException(message);
+                }
+
+                scriptConfig.FunctionTimeout = requestedTimeout;
+            }
+            else if (ScriptSettingsManager.Instance.IsDynamicSku)
+            {
+                // Apply a default if this is running on Dynamic.
+                scriptConfig.FunctionTimeout = DefaultFunctionTimeout;
+            }
+
+            // apply swagger configuration
+            scriptConfig.SwaggerEnabled = false;
+
+            var configSection = (JObject)config["swagger"];
+
+            if (configSection != null &&
+                configSection.TryGetValue("enabled", out JToken swaggerEnabled) &&
+                swaggerEnabled.Type == JTokenType.Boolean)
+            {
+                scriptConfig.SwaggerEnabled = (bool)swaggerEnabled;
+            }
+
+            ApplyLoggerConfig(config, scriptConfig);
+            ApplyApplicationInsightsConfig(config, scriptConfig);
+        }
+
+        private static void ApplyAssemblyConfiguration(JObject config, ScriptHostConfiguration scriptConfig, JobHostConfiguration hostConfig)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ApplyTracingConfiguration(JObject config, ScriptHostConfiguration scriptConfig, JobHostConfiguration hostConfig)
+        {
+            var configSection = (JObject)config["tracing"];
+            JToken value = null;
+            if (configSection != null)
+            {
+                if (configSection.TryGetValue("consoleLevel", out value))
+                {
+                    if (Enum.TryParse((string)value, true, out TraceLevel consoleLevel))
+                    {
+                        hostConfig.Tracing.ConsoleLevel = consoleLevel;
+                    }
+                }
+
+                if (configSection.TryGetValue("fileLoggingMode", out value))
+                {
+                    if (Enum.TryParse((string)value, true, out FileLoggingMode fileLoggingMode))
+                    {
+                        scriptConfig.FileLoggingMode = fileLoggingMode;
+                    }
+                }
+            }
+        }
+
+        private static void ApplyHostHealthMonitorConfiguration(JObject config, ScriptHostConfiguration scriptConfig)
+        {
+            var configSection = (JObject)config["healthMonitor"];
+            JToken value = null;
+            if (configSection != null)
+            {
+                if (configSection.TryGetValue("enabled", out value) && value.Type == JTokenType.Boolean)
+                {
+                    scriptConfig.HostHealthMonitor.Enabled = (bool)value;
+                }
+                if (configSection.TryGetValue("healthCheckInterval", out value))
+                {
+                    scriptConfig.HostHealthMonitor.HealthCheckInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                }
+                if (configSection.TryGetValue("healthCheckWindow", out value))
+                {
+                    scriptConfig.HostHealthMonitor.HealthCheckWindow = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
+                }
+                if (configSection.TryGetValue("healthCheckThreshold", out value))
+                {
+                    scriptConfig.HostHealthMonitor.HealthCheckThreshold = (int)value;
+                }
+                if (configSection.TryGetValue("counterThreshold", out value))
+                {
+                    scriptConfig.HostHealthMonitor.CounterThreshold = (float)value;
+                }
+            }
+        }
+
+        private static void ApplySingletonConfiguration(JObject config, JobHostConfiguration hostConfig)
+        {
+            var configSection = (JObject)config["singleton"];
             JToken value = null;
             if (configSection != null)
             {
@@ -1408,91 +1510,6 @@ namespace Microsoft.Azure.WebJobs.Script
                     hostConfig.Singleton.LockAcquisitionPollingInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
                 }
             }
-
-            // Apply Host Health Montitor configuration
-            configSection = (JObject)config["healthMonitor"];
-            value = null;
-            if (configSection != null)
-            {
-                if (configSection.TryGetValue("enabled", out value) && value.Type == JTokenType.Boolean)
-                {
-                    scriptConfig.HostHealthMonitor.Enabled = (bool)value;
-                }
-                if (configSection.TryGetValue("healthCheckInterval", out value))
-                {
-                    scriptConfig.HostHealthMonitor.HealthCheckInterval = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("healthCheckWindow", out value))
-                {
-                    scriptConfig.HostHealthMonitor.HealthCheckWindow = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-                }
-                if (configSection.TryGetValue("healthCheckThreshold", out value))
-                {
-                    scriptConfig.HostHealthMonitor.HealthCheckThreshold = (int)value;
-                }
-                if (configSection.TryGetValue("counterThreshold", out value))
-                {
-                    scriptConfig.HostHealthMonitor.CounterThreshold = (float)value;
-                }
-            }
-
-            // Apply Tracing/Logging configuration
-            configSection = (JObject)config["tracing"];
-            if (configSection != null)
-            {
-                if (configSection.TryGetValue("consoleLevel", out value))
-                {
-                    TraceLevel consoleLevel;
-                    if (Enum.TryParse<TraceLevel>((string)value, true, out consoleLevel))
-                    {
-                        hostConfig.Tracing.ConsoleLevel = consoleLevel;
-                    }
-                }
-
-                if (configSection.TryGetValue("fileLoggingMode", out value))
-                {
-                    FileLoggingMode fileLoggingMode;
-                    if (Enum.TryParse<FileLoggingMode>((string)value, true, out fileLoggingMode))
-                    {
-                        scriptConfig.FileLoggingMode = fileLoggingMode;
-                    }
-                }
-            }
-
-            if (config.TryGetValue("functionTimeout", out value))
-            {
-                TimeSpan requestedTimeout = TimeSpan.Parse((string)value, CultureInfo.InvariantCulture);
-
-                // Only apply limits if this is Dynamic.
-                if (ScriptSettingsManager.Instance.IsDynamicSku && (requestedTimeout < MinFunctionTimeout || requestedTimeout > MaxFunctionTimeout))
-                {
-                    string message = $"{nameof(scriptConfig.FunctionTimeout)} must be between {MinFunctionTimeout} and {MaxFunctionTimeout}.";
-                    throw new ArgumentException(message);
-                }
-
-                scriptConfig.FunctionTimeout = requestedTimeout;
-            }
-            else if (ScriptSettingsManager.Instance.IsDynamicSku)
-            {
-                // Apply a default if this is running on Dynamic.
-                scriptConfig.FunctionTimeout = DefaultFunctionTimeout;
-            }
-
-            // apply swagger configuration
-            scriptConfig.SwaggerEnabled = false;
-
-            configSection = (JObject)config["swagger"];
-            JToken swaggerEnabled;
-
-            if (configSection != null &&
-                configSection.TryGetValue("enabled", out swaggerEnabled) &&
-                swaggerEnabled.Type == JTokenType.Boolean)
-            {
-                scriptConfig.SwaggerEnabled = (bool)swaggerEnabled;
-            }
-
-            ApplyLoggerConfig(config, scriptConfig);
-            ApplyApplicationInsightsConfig(config, scriptConfig);
         }
 
         internal static void ApplyLoggerConfig(JObject configJson, ScriptHostConfiguration scriptConfig)

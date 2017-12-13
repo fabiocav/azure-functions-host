@@ -25,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Script
             RootExtensionsPath = ConfigurationManager.AppSettings[EnvironmentSettingNames.AzureWebJobsExtensionsPath];
             LoggerFactoryBuilder = new DefaultLoggerFactoryBuilder();
             HostHealthMonitor = new HostHealthMonitorConfiguration();
+            AssemblyBinding = new AssemblyBindingConfiguration();
         }
 
         /// <summary>
@@ -134,5 +135,10 @@ namespace Microsoft.Azure.WebJobs.Script
         /// Gets the <see cref="HostHealthMonitorConfiguration"/> to use.
         /// </summary>
         public HostHealthMonitorConfiguration HostHealthMonitor { get; }
+
+        /// <summary>
+        /// Gets the assembly binding configuration rules and settings.
+        /// </summary>
+        public AssemblyBindingConfiguration AssemblyBinding { get; }
     }
 }

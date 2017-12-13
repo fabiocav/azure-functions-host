@@ -32,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         public FunctionAssemblyLoader(string rootScriptPath)
         {
             _rootScriptUri = new Uri(rootScriptPath, UriKind.RelativeOrAbsolute);
+            InitializeAssemblyConfiguration
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
             _functionNameFromAssemblyRegex = new Regex(string.Format(CultureInfo.InvariantCulture, "^{0}(?<name>.*?){1}", AssemblyPrefix, AssemblySeparator), RegexOptions.Compiled);
         }
