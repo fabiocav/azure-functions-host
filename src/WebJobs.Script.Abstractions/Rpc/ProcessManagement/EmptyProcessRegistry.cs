@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Script.Rpc
 {
-    internal class EmptyProcessRegistry : IProcessRegistry
+    public class EmptyProcessRegistry : IProcessRegistry
     {
         public bool Register(Process process) => true;
     }

@@ -6,9 +6,9 @@ using Microsoft.Azure.WebJobs.Script.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Script.Rpc
 {
-    internal delegate ILanguageWorkerChannel CreateChannel(WorkerConfig conf, IObservable<FunctionRegistrationContext> registrations);
+    public delegate ILanguageWorkerChannel CreateChannel(WorkerConfig conf, IObservable<FunctionRegistrationContext> registrations);
 
-    internal interface ILanguageWorkerChannel : IDisposable
+    public interface ILanguageWorkerChannel : IDisposable
     {
         string Id { get; }
 

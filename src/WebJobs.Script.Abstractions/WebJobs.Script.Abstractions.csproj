@@ -8,11 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta4-11124" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions" Version="3.0.0-beta4-10578" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.0" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta004">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-
+    <Folder Include="Rpc\FunctionRegistration\" />
   </ItemGroup>
-
 </Project>
