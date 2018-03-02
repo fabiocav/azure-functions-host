@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\build\common.props" />
+  <PropertyGroup>
+    <PackageId>Microsoft.Azure.WebJobs.Script.Abstractions</PackageId>
+    <PackageIconUrl>https://raw.githubusercontent.com/Azure/azure-webjobs-sdk/dev/webjobs.png</PackageIconUrl>
+    <AssemblyName>Microsoft.Azure.WebJobs.Script.Abstractions</AssemblyName>
+    <RootNamespace>Microsoft.Azure.WebJobs.Script.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    
+  </ItemGroup>
+
+  <ItemGroup>
+
+  </ItemGroup>
+
+</Project>
