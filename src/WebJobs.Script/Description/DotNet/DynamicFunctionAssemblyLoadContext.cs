@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private readonly ILogger _logger;
 
         public DynamicFunctionAssemblyLoadContext(FunctionMetadata functionMetadata, IFunctionMetadataResolver resolver, ILogger logger)
-            : base(ResolveFunctionAppRoot())
+            : base(ResolveFunctionBaseProbingPath())
         {
             _functionMetadata = functionMetadata ?? throw new ArgumentNullException(nameof(functionMetadata));
             _metadataResolver = resolver;

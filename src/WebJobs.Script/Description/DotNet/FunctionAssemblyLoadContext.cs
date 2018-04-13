@@ -26,16 +26,11 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private readonly string _baseProbingPath;
         private static readonly Lazy<string[]> _runtimeAssemblies = new Lazy<string[]>(GetRuntimeAssemblies);
 
-        private static Lazy<FunctionAssemblyLoadContext> _defaultContext = new Lazy<FunctionAssemblyLoadContext>(() => new FunctionAssemblyLoadContext(ResolveFunctionAppRoot()), true);
+        private static Lazy<FunctionAssemblyLoadContext> _defaultContext = new Lazy<FunctionAssemblyLoadContext>(() => new FunctionAssemblyLoadContext(ResolveFunctionBaseProbingPath()), true);
 
-        public FunctionAssemblyLoadContext(string functionAppRoot)
+        public FunctionAssemblyLoadContext(string basePath)
         {
-            if (functionAppRoot == null)
-            {
-                throw new ArgumentNullException(nameof(functionAppRoot));
-            }
-
-            _baseProbingPath = Path.Combine(functionAppRoot, "bin");
+            _baseProbingPath = basePath ?? throw new ArgumentNullException(nameof(basePath));
         }
 
         public static FunctionAssemblyLoadContext Shared => _defaultContext.Value;
@@ -63,16 +58,21 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return null;
         }
 
-        protected static string ResolveFunctionAppRoot()
+        protected static string ResolveFunctionBaseProbingPath()
         {
+            string basePath = null;
             var settingsManager = ScriptSettingsManager.Instance;
             if (settingsManager.IsAzureEnvironment)
             {
                 string home = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebsiteHomePath);
-                return Path.Combine(home, "site", "wwwroot");
+                basePath = Path.Combine(home, "site", "wwwroot");
+            }
+            else
+            {
+                basePath = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebJobsScriptRoot);
             }
 
-            return settingsManager.GetSetting(EnvironmentSettingNames.AzureWebJobsScriptRoot);
+            return Path.Combine(basePath, "bin");
         }
 
         private static string[] GetRuntimeAssemblies()
