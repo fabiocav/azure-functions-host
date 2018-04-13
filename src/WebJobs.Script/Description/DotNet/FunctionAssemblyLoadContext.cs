@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
             else
             {
-                basePath = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebJobsScriptRoot);
+                basePath = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebJobsScriptRoot) ?? AppContext.BaseDirectory;
             }
 
             return Path.Combine(basePath, "bin");
