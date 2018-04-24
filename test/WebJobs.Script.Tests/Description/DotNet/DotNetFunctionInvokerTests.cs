@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,10 +48,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             // Create the invoker dependencies and setup the appropriate method to throw the exception
             RunDependencies dependencies = CreateDependencies();
-            dependencies.Compilation.Setup(c => c.GetEntryPointSignature(It.IsAny<IFunctionEntryPointResolver>(), null))
+            dependencies.Compilation.Setup(c => c.GetEntryPointSignature(It.IsAny<IFunctionEntryPointResolver>(), It.IsAny<Assembly>()))
                 .Throws(exception);
             dependencies.Compilation.Setup(c => c.EmitAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(DotNetCompilationResult.FromPath(typeof(object).Assembly.Location));
+                .ReturnsAsync(DotNetCompilationResult.FromPath(typeof(DotNetFunctionInvokerTests).Assembly.Location));
 
             string functionName = Guid.NewGuid().ToString();
             string rootFunctionsFolder = Path.Combine(Path.GetTempPath(), functionName);
