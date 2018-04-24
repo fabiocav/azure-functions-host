@@ -2,19 +2,14 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Microsoft.Azure.WebJobs.Script.Config;
-using Microsoft.Extensions.DependencyModel;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
@@ -26,7 +21,6 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     {
         private readonly string _baseProbingPath;
         private static readonly Lazy<string[]> _runtimeAssemblies = new Lazy<string[]>(GetRuntimeAssemblies);
-        private static readonly Lazy<Regex> _unmanagedFileNameRegex = new Lazy<Regex>(CreateUnmanagedFileNameRegex);
 
         private static Lazy<FunctionAssemblyLoadContext> _defaultContext = new Lazy<FunctionAssemblyLoadContext>(() => new FunctionAssemblyLoadContext(ResolveFunctionBaseProbingPath()), true);
 
@@ -65,25 +59,57 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             // For now, we'll attempt to resolve unmanaged DLLs from the base probing path
 
             // Directory resolution is be simple for now, we'll assume the base probing
-            // path (usually, the bin folder in the function app root), but we need to properly resolve
-            // the native module in different platforms:
+            // path (usually, the bin folder in the function app root) and combine with
+            // the file name resolved from the native DLL reference:
+            string fileName = GetUnmanagedLibraryFileName(unmanagedDllName);
+
+            if (File.Exists(fileName))
+            {
+                LoadUnmanagedDllFromPath(fileName);
+            }
+
+            return base.LoadUnmanagedDll(unmanagedDllName);
+        }
+
+        private string GetUnmanagedLibraryFileName(string unmanagedLibraryName)
+        {
+            // We need to properly resolve the native library in different platforms:
             // - Windows will append the '.DLL' extension to the name
             // - Linux uses the 'lib' prefix and '.so' suffix. The version may also be appended to the suffix
             // - macOS uses the 'lib' prefix '.dylib'
             // To handle the different scenarios described above, we'll just have a pattern that gives us the ability
             // to match the variations across different platforms. If needed, we can expand this in the future to have
             // logic specific to the platform we're running under.
-            string pattern = "";
-            Directory.EnumerateFiles(_baseProbingPath, )
 
-            return base.LoadUnmanagedDll(unmanagedDllName);
+            string fileName = null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (unmanagedLibraryName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    fileName = unmanagedLibraryName;
+                }
+                else
+                {
+                    fileName = unmanagedLibraryName + ".dll";
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                fileName = "lib" + unmanagedLibraryName + ".dylib";
+            }
+            else
+            {
+                fileName = "lib" + unmanagedLibraryName + ".so";
+            }
+
+            return fileName;
         }
 
         protected static string ResolveFunctionBaseProbingPath()
         {
             string basePath = null;
             var settingsManager = ScriptSettingsManager.Instance;
-            if (settingsManager.IsAzureEnvironment)
+            if (settingsManager.IsAppServiceEnvironment)
             {
                 string home = settingsManager.GetSetting(EnvironmentSettingNames.AzureWebsiteHomePath);
                 basePath = Path.Combine(home, "site", "wwwroot");
@@ -112,12 +138,6 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             {
                 return reader.ReadToEnd();
             }
-        }
-
-        private static Regex CreateUnmanagedFileNameRegex()
-        {
-            string pattern = @"(^(?i)testname\.dll$|(?-i)^libtestname\.(so(\.\d+\.\d+\.\d+)?$|dylib$))";
-            var regex = new Regex(pattern);
         }
     }
 }
