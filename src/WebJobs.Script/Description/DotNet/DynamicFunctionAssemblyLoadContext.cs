@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
     /// <summary>
     /// An <see cref="AssemblyLoadContext"/> used to load dynamically compiled functions and their dependencies.
     /// </summary>
-    internal sealed partial class DynamicFunctionAssemblyLoadContext : FunctionAssemblyLoadContext
+    internal partial class DynamicFunctionAssemblyLoadContext : FunctionAssemblyLoadContext
     {
         private readonly FunctionMetadata _functionMetadata;
         private readonly IFunctionMetadataResolver _metadataResolver;
@@ -27,6 +27,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             _metadataResolver = resolver;
             _logger = logger ?? NullLogger.Instance;
         }
+
+        protected virtual FunctionAssemblyLoadContext SharedContext => FunctionAssemblyLoadContext.Shared;
 
         protected override Assembly OnResolvingAssembly(AssemblyLoadContext context, AssemblyName assemblyName)
         {
@@ -43,8 +45,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // Verify if the shared context contains or can load the assembly first.
-            // Unification will always be done to the version in the shared context.
-            Assembly assembly = _metadataResolver?.ResolveAssembly(assemblyName, this);
+            if (SharedContext.TryLoadAssembly(assemblyName, out Assembly assembly))
+            {
+                return assembly;
+            }
+
+            assembly = _metadataResolver?.ResolveAssembly(assemblyName, this);
             if (assembly == null)
             {
                 Logger.AssemblyResolved(_logger, assemblyName.FullName, _functionMetadata.Name);

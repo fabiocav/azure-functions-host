@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
         protected override Assembly Load(AssemblyName assemblyName)
         {
-            if (_runtimeAssemblies.Value.Contains(assemblyName.Name))
+            if (_runtimeAssemblies.Value.Contains(assemblyName.Name) || assemblyName.Name.StartsWith("system.", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -52,6 +52,13 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
 
             return null;
+        }
+
+        internal bool TryLoadAssembly(AssemblyName assemblyName, out Assembly assembly)
+        {
+            assembly = Load(assemblyName);
+
+            return assembly != null;
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
@@ -71,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return base.LoadUnmanagedDll(unmanagedDllName);
         }
 
-        private string GetUnmanagedLibraryFileName(string unmanagedLibraryName)
+        internal string GetUnmanagedLibraryFileName(string unmanagedLibraryName)
         {
             // We need to properly resolve the native library in different platforms:
             // - Windows will append the '.DLL' extension to the name

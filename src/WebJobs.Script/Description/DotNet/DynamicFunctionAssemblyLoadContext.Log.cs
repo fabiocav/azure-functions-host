@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
-    internal sealed partial class DynamicFunctionAssemblyLoadContext
+    internal partial class DynamicFunctionAssemblyLoadContext
     {
         private static class Logger
         {
