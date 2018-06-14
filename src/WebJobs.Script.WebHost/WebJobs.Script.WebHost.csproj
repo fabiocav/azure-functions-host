@@ -40,6 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DependencyInjection\" />
     <Folder Include="Routing\" />
   </ItemGroup>
 
@@ -49,13 +50,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Buffering" Version="0.4.0-preview2-28189" />
     <PackageReference Include="Microsoft.Azure.AppService.Proxy.Client" Version="2.0.5350001-beta-fc119b98" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IIS" Version="2.1.0-a-oob-2-1-oob-17035" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta7-11351" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions" Version="3.0.0-beta7-10640" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.0.0-beta7-10640">
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.0-beta7-11363" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions" Version="3.0.0-beta7" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.0.0-beta7">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Logging" Version="3.0.0-beta7-11351" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.0-beta7-11351" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Logging" Version="3.0.0-beta7-11363" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.0-beta7-11363" />
     <PackageReference Include="Microsoft.Azure.WebSites.DataProtection" Version="2.1.88-alpha" />
     <PackageReference Include="System.Net.Primitives" Version="4.3.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="8.6.0" />
