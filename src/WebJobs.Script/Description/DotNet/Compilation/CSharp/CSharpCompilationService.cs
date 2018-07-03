@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -48,7 +49,20 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             Compilation compilation = GetScriptCompilation(script, functionMetadata);
 
-            return Task.FromResult<IDotNetCompilation>(new CSharpCompilation(compilation));
+            IDotNetCompilation csharpCompilation = CreateCSharpCompilation(functionMetadata, compilation);
+            return Task.FromResult(csharpCompilation);
+        }
+
+        private static IDotNetCompilation CreateCSharpCompilation(FunctionMetadata functionMetadata, Compilation compilation)
+        {
+            ICSharpCompilation result = new CSharpCompilation(compilation);
+
+            if (!FeatureFlags.IsEnabled(ScriptConstants.FeatureFlagDisableCSharpCompilationCache))
+            {
+                result = new CachedCSharpCompilation(result, functionMetadata);
+            }
+
+            return result;
         }
 
         internal static string GetFunctionSource(FunctionMetadata functionMetadata)
