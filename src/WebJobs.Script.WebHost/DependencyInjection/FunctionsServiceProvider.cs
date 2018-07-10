@@ -1,17 +1,17 @@
-﻿using DryIoc;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
+using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Concurrent;
-using System.Linq;
 
-namespace ServiceScopingPoc
+namespace Microsoft.Azure.WebJobs.Script.WebHost.DependencyInjection
 {
     public class FunctionsServiceProvider : IServiceProvider, IServiceScopeFactory
     {
         private static readonly Rules _defaultContainerRules;
-        private Container _root;
+        private readonly Container _root;
         private FunctionsResolver _currentResolver;
 
         static FunctionsServiceProvider()
@@ -30,7 +30,7 @@ namespace ServiceScopingPoc
             _root.UseInstance<IServiceProvider>(this);
             _root.UseInstance<FunctionsServiceProvider>(this);
 
-            _currentResolver = new FunctionsResolver(_root);
+            _currentResolver = new FunctionsResolver(_root, true);
         }
 
         public string State { get; set; }
@@ -60,9 +60,13 @@ namespace ServiceScopingPoc
             _root.Populate(services);
         }
 
+        /// <summary>
+        /// Updates the child container and populates it with the services contained in the provided <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="serviceDescriptors">The service descriptors used to populate the child container.</param>
         internal void UpdateChildServices(IServiceCollection serviceDescriptors)
         {
-            var rules = _defaultContainerRules
+            Rules rules = _defaultContainerRules
                 .WithUnknownServiceResolvers(request => new DelegateFactory(_ => _root.Resolve(request.ServiceType, IfUnresolved.ReturnDefault)));
 
             var resolver = new Container(rules);
@@ -71,7 +75,7 @@ namespace ServiceScopingPoc
             var previous = _currentResolver;
             _currentResolver = new FunctionsResolver(resolver);
 
-            if (!ReferenceEquals(previous.Container, _root))
+            if (!previous.IsRootResolver)
             {
                 previous.Dispose();
             }
