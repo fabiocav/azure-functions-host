@@ -20,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 services.AddSingleton<IScriptJobHost>(p => p.GetRequiredService<ScriptHost>());
                 services.AddSingleton<IJobHost>(p => p.GetRequiredService<ScriptHost>());
                 services.AddSingleton<IFunctionMetadataManager, FunctionMetadataManager>();
+                services.AddSingleton<ITypeLocator, ScriptTypeLocator>();
+                services.AddSingleton<WebJobs.Host.Executors.IHostIdProvider, IdProvider>();
 
                 // Configuration
                 services.AddSingleton<IOptions<ScriptWebHostOptions>>(webHostOptions);

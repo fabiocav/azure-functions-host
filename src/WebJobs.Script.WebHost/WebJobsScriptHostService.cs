@@ -66,17 +66,19 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                             .ConfigureServices(s =>
                             {
                                 var fa = new LoggerFactory();
-                                fa.AddConsole(LogLevel.Warning);
+                                fa.AddConsole(LogLevel.Trace);
                                 s.AddSingleton<ILoggerFactory>(fa);
                                 s.AddSingleton<IHostLifetime, ScriptHostLifetime>();
-                                s.AddSingleton<WebJobs.Host.Executors.IHostIdProvider, IdProvider>();
                             })
                             .ConfigureAppConfiguration(c =>
                             {
                                 c.Add(new HostJsonFileConfigurationSource(_webHostOptions));
                             })
                             .AddScriptHostServices(_webHostOptions)
-                            .ConfigureWebJobsHost()
+                            .ConfigureWebJobsHost(o =>
+                            {
+                                o.AllowPartialHostStartup = true;
+                            })
                             .AddWebJobsLogging() // Enables WebJobs v1 classic logging
                             .AddAzureStorageCoreServices()
                             .AddAzureStorage()
