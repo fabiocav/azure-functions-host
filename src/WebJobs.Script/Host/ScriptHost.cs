@@ -87,8 +87,7 @@ namespace Microsoft.Azure.WebJobs.Script
         // This is the set of bindings we shipped prior to binding extensibility.
         // Map from BindingType to the Assembly Qualified Type name for its IExtensionConfigProvider object.
 
-        public ScriptHost(IScriptHostEnvironment environment,
-            IOptions<JobHostOptions> options,
+        public ScriptHost(IOptions<JobHostOptions> options,
             IJobHostContextFactory jobHostContextFactory,
             IConnectionStringProvider connectionStringProvider,
             IDistributedLockManager distributedLockManager,
@@ -117,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Script
             //}
 
             ScriptOptions = scriptHostOptions.Value;
-            _scriptHostEnvironment = environment;
+            _scriptHostEnvironment = new NullScriptHostEnvironment();
             FunctionErrors = new Dictionary<string, Collection<string>>(StringComparer.OrdinalIgnoreCase);
 
             EventManager = eventManager;

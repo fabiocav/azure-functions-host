@@ -18,21 +18,32 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
     public class WebJobsScriptHostService : IHostedService, IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly FunctionsServiceProvider _serviceProvider;
+        private readonly IServiceProvider _rootServiceProvider;
+        private readonly IServiceScopeFactory _rootScopeFactory;
         private readonly IOptions<ScriptWebHostOptions> _webHostOptions;
         private readonly ILogger _logger;
         private bool _disposed = false;
         private Task _hostTask;
         private IHost _host;
 
-        public WebJobsScriptHostService(FunctionsServiceProvider serviceProvider, IOptions<ScriptWebHostOptions> webHostOptions, ILoggerFactory loggerFactory)
+        public WebJobsScriptHostService(IOptions<ScriptWebHostOptions> webHostOptions, IServiceProvider rootServiceProvider, IServiceScopeFactory rootScopeFactory, ILoggerFactory loggerFactory)
         {
-            _cancellationTokenSource = new CancellationTokenSource();
-            _hostTask = Task.CompletedTask;
-            _serviceProvider = serviceProvider;
-            _webHostOptions = webHostOptions;
+            if (loggerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
+            _rootServiceProvider = rootServiceProvider ?? throw new ArgumentNullException(nameof(rootServiceProvider));
+            _rootScopeFactory = rootScopeFactory ?? throw new ArgumentNullException(nameof(rootScopeFactory));
+            _webHostOptions = webHostOptions ?? throw new ArgumentNullException(nameof(webHostOptions));
+
             _logger = loggerFactory.CreateLogger(ScriptConstants.LogCategoryHostGeneral);
+
+            _hostTask = Task.CompletedTask;
+            _cancellationTokenSource = new CancellationTokenSource();
         }
+
+        public IServiceProvider Services => _host?.Services;
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -62,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         private IHost BuildHost()
         {
             return new HostBuilder()
-                            .UseServiceProviderFactory(new ExternalFunctionsServiceProviderFactory(_serviceProvider))
+                            .UseServiceProviderFactory(new ScriptHostScopedServiceProviderFactory(_rootServiceProvider, _rootScopeFactory))
                             .ConfigureServices(s =>
                             {
                                 var fa = new LoggerFactory();
