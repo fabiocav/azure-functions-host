@@ -743,7 +743,6 @@ namespace Microsoft.Azure.WebJobs.Script
 
             var directTypes = GetDirectTypes(functionMetadata);
             extensionLoader.LoadDirectlyReferencedExtensions(directTypes);
-            extensionLoader.LoadCustomExtensions();
             _startupLogger.LogTrace("Extension loading complete.");
 
             // Now all extensions have been loaded, the metadata is finalized.
