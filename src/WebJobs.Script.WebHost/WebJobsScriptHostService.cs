@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Hosting;
@@ -76,19 +77,23 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
             // Host configuration
             builder.UseServiceProviderFactory(new ScriptHostScopedServiceProviderFactory(_rootServiceProvider, _rootScopeFactory))
-                            .ConfigureServices(s =>
-                            {
-                                // TODO: DI (FACAVAL) Temporary - replace with proper logger factory using
-                                // job host configuration
-                                var fa = new LoggerFactory();
-                                fa.AddConsole(LogLevel.Trace);
-                                s.AddSingleton<ILoggerFactory>(fa);
-                                s.AddSingleton<IHostLifetime, ScriptHostLifetime>();
-                            })
-                            .ConfigureAppConfiguration(c =>
-                            {
-                                c.Add(new HostJsonFileConfigurationSource(_webHostOptions));
-                            });
+                .ConfigureLogging(b =>
+                {
+                    b.AddConsole(c => { c.DisableColors = false; });
+                    b.SetMinimumLevel(LogLevel.Trace);
+                    b.AddFilter(f => true);
+                })
+                .ConfigureServices(s =>
+                {
+                    // TODO: DI (FACAVAL) Temporary - replace with proper logger factory using
+                    // job host configuration
+                    s.AddSingleton<ILoggerFactory, CustomFactory>();
+                    s.AddSingleton<IHostLifetime, ScriptHostLifetime>();
+                })
+                .ConfigureAppConfiguration(c =>
+                {
+                    c.Add(new HostJsonFileConfigurationSource(_webHostOptions));
+                });
 
             // WebJobs configuration
             builder.AddScriptHost(_webHostOptions);
@@ -129,6 +134,31 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         public Task<string> GetHostIdAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult("0980980980980980980980989009");
+        }
+    }
+
+    public class CustomFactory : ILoggerFactory
+    {
+        private readonly LoggerFactory _factory;
+
+        public CustomFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption)
+        {
+            _factory = new LoggerFactory(providers, filterOption);
+        }
+
+        public void AddProvider(ILoggerProvider provider)
+        {
+            _factory.AddProvider(provider);
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return _factory.CreateLogger(categoryName);
+        }
+
+        public void Dispose()
+        {
+            _factory.Dispose();
         }
     }
 }

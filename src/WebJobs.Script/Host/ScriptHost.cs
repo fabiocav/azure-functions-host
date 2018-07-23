@@ -518,6 +518,7 @@ namespace Microsoft.Azure.WebJobs.Script
             Collection<FunctionDescriptor> functions;
             using (_metricsLogger.LatencyEvent(MetricEventNames.HostStartupGetFunctionDescriptorsLatency))
             {
+                _startupLogger.LogTrace("Creating function descriptors.");
                 functions = GetFunctionDescriptors(functionMetadata);
                 _startupLogger.LogTrace("Function descriptors created.");
             }
