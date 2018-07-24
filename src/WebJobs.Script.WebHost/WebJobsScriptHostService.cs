@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Script.WebHost
 {
-    public class WebJobsScriptHostService : IHostedService, IDisposable
+    public class WebJobsScriptHostService : IHostedService, IScriptHostManager,  IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly IServiceProvider _rootServiceProvider;
@@ -42,9 +42,13 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
             _hostTask = Task.CompletedTask;
             _cancellationTokenSource = new CancellationTokenSource();
+
+            State = ScriptHostState.Default;
         }
 
         public IServiceProvider Services => _host?.Services;
+
+        public ScriptHostState State { get; private set; }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -69,6 +73,25 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             {
                 _logger.LogInformation("Script host manager shutdown completed.");
             }
+        }
+
+        public async Task RestartHostAsync(CancellationToken cancellationToken)
+        {
+            State = ScriptHostState.Default;
+
+            _logger.LogInformation("Restarting script host.");
+
+            var previousHost = _host;
+            _host = BuildHost();
+
+            var stopTask = previousHost.StopAsync(cancellationToken).
+                ContinueWith(t => previousHost.Dispose());
+
+            await _host.StartAsync(cancellationToken);
+
+            State = ScriptHostState.Running;
+
+            _logger.LogInformation("Script host restarted.");
         }
 
         private IHost BuildHost()
@@ -105,6 +128,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 s.RemoveAll<IHostedService>();
                 s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, JobHostService>());
                 s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, HttpInitializationService>());
+                s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, FileMonitoringService>());
             });
 
             return builder.Build();
@@ -123,6 +147,11 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
         }
 
         public void Dispose() => Dispose(true);
+
+        public Task RestartHostAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class IdProvider : WebJobs.Host.Executors.IHostIdProvider
