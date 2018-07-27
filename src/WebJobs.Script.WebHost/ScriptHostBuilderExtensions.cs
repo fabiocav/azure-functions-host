@@ -1,7 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Host.Timers;
 using Microsoft.Azure.WebJobs.Script.Binding;
+using Microsoft.Azure.WebJobs.Script.BindingExtensions;
 using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.Azure.WebJobs.Script.Diagnostics;
 using Microsoft.Azure.WebJobs.Script.Eventing;
@@ -9,7 +12,6 @@ using Microsoft.Azure.WebJobs.Script.Extensibility;
 using Microsoft.Azure.WebJobs.Script.WebHost.DependencyInjection;
 using Microsoft.Azure.WebJobs.Script.WebHost.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -48,8 +50,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 services.AddSingleton<IJobHost>(p => p.GetRequiredService<ScriptHost>());
                 services.AddSingleton<IFunctionMetadataManager, FunctionMetadataManager>();
                 services.AddSingleton<ITypeLocator, ScriptTypeLocator>();
-                services.AddSingleton<WebJobs.Host.Executors.IHostIdProvider, IdProvider>();
+                services.AddSingleton<IHostIdProvider, IdProvider>();
                 services.AddSingleton<ScriptSettingsManager>();
+                services.AddSingleton<IWebJobsExceptionHandler, WebScriptHostExceptionHandler>();
                 // TODO: DI (FACAVAL) Review metrics logger registration
                 services.AddSingleton<IMetricsLogger, WebHostMetricsLogger>();
                 services.AddSingleton<IScriptEventManager, ScriptEventManager>();
@@ -71,6 +74,11 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 // Configuration
                 services.AddSingleton<IOptions<ScriptWebHostOptions>>(webHostOptions);
                 services.ConfigureOptions<ScriptHostOptionsSetup>();
+
+                services.AddSingleton<IDebugManager, DebugManager>();
+                services.AddSingleton<IDebugStateProvider, DebugStateProvider>();
+                services.AddSingleton<IFileLoggingStatusManager, FileLoggingStatusManager>();
+                services.AddSingleton<IPrimaryHostStateProvider, PrimaryHostStateProvider>();
             });
 
             return builder;
