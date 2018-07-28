@@ -651,7 +651,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             //Assert.Equal(8, scriptConfig.HostConfig.Singleton.LockAcquisitionPollingInterval.TotalSeconds);
         }
 
-        [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource)")]
+        [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource) - Also validate in setup test")]
         public void ApplyConfiguration_FileWatching()
         {
             //JObject config = new JObject();
@@ -1073,18 +1073,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             //Assert.Equal(TimeSpan.FromMinutes(7), scriptConfig.HostHealthMonitor.HealthCheckWindow);
             //Assert.Equal(77, scriptConfig.HostHealthMonitor.HealthCheckThreshold);
             //Assert.Equal(0.77F, scriptConfig.HostHealthMonitor.CounterThreshold);
-        }
-
-        [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource)")]
-        public void ApplyApplicationInsightsConfig_NoSettings_CreatesDefaultSettings()
-        {
-            //JObject config = JObject.Parse("{ }");
-
-            //ScriptHostConfiguration scriptConfig = new ScriptHostConfiguration();
-            //ScriptHost.ApplyApplicationInsightsConfig(config, scriptConfig);
-
-            //Assert.NotNull(scriptConfig.ApplicationInsightsSamplingSettings);
-            //Assert.Equal(5, scriptConfig.ApplicationInsightsSamplingSettings.MaxTelemetryItemsPerSecond);
         }
 
         [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource)")]
