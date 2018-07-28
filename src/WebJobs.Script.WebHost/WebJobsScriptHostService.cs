@@ -49,6 +49,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         public ScriptHostState State { get; private set; }
 
+        public Exception LastError { get; private set; }
+
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             _startupLoopTokenSource = new CancellationTokenSource();
@@ -83,6 +85,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             {
                 _host = BuildHost();
                 await _host.StartAsync(cancellationToken);
+                LastError = null;
             }
             catch (OperationCanceledException)
             {
@@ -90,8 +93,8 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             }
             catch (Exception exc)
             {
+                LastError = exc;
                 State = ScriptHostState.Error;
-                //LastError = ex;
                 attemptCount++;
 
                 var hostLoggerFactory = _host.Services.GetService<ILoggerFactory>();
@@ -168,48 +171,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
 
         private IHost BuildHost()
         {
-            var builder = new HostBuilder();
-
-            // Host configuration
-            builder.UseServiceProviderFactory(new ScriptHostScopedServiceProviderFactory(_rootServiceProvider, _rootScopeFactory))
-                .ConfigureLogging(b =>
-                {
-                    b.AddConsole(c => { c.DisableColors = false; });
-                    b.SetMinimumLevel(LogLevel.Trace);
-                    b.AddFilter(f => true);
-
-                    // TODO: DI (FACAVAL) Temporary - replace with proper logger factory using
-                    // job host configuration
-                    b.Services.AddSingleton<ILoggerFactory, CustomFactory>();
-
-                    b.Services.AddSingleton<ILoggerProvider, SystemLoggerProvider>();
-                    b.Services.AddSingleton<ILoggerProvider, HostFileLoggerProvider>();
-                    b.Services.AddSingleton<ILoggerProvider, FunctionFileLoggerProvider>();
-                })
-                .ConfigureServices(s =>
-                {
-                    s.AddSingleton<IHostLifetime, ScriptHostLifetime>();
-                })
-                .ConfigureAppConfiguration(c =>
-                {
-                    c.Add(new HostJsonFileConfigurationSource(_webHostOptions));
-                });
-
-            // WebJobs configuration
-            builder.AddScriptHost(_webHostOptions);
-
-            // HACK: Remove previous IHostedService registration
-            // TODO: DI (FACAVAL) Remove this and move HttpInitialization to webjobs configuration
-            builder.ConfigureServices(s =>
-            {
-                s.RemoveAll<IHostedService>();
-                s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, PrimaryHostCoordinator>());
-                s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, JobHostService>());
-                s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, HttpInitializationService>());
-                s.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, FileMonitoringService>());
-            });
-
-            return builder.Build();
+            return new HostBuilder()
+                .AddScriptHost(_rootServiceProvider, _rootScopeFactory, _webHostOptions)
+                .Build();
         }
 
         /// <summary>
