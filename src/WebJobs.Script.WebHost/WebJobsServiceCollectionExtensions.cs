@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             services.AddSingleton<IHostedService>(s => s.GetRequiredService<WebJobsScriptHostService>());
             services.AddSingleton<IScriptHostManager>(s => s.GetRequiredService<WebJobsScriptHostService>());
 
-            if (EnvironmentUtility.IsLinuxContainerEnvironment)
+            if (SystemEnvironment.Instance.IsLinuxContainerEnvironment())
             {
                 services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, LinuxContainerInitializationHostService>());
             }
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
             services.AddSingleton<IEventGenerator>(p =>
             {
                 var settingsManager = p.GetService<ScriptSettingsManager>();
-                if (EnvironmentUtility.IsLinuxContainerEnvironment)
+                if (SystemEnvironment.Instance.IsLinuxContainerEnvironment())
                 {
                     return new LinuxContainerEventGenerator();
                 }

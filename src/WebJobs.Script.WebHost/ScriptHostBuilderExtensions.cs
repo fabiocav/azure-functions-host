@@ -53,7 +53,9 @@ namespace Microsoft.Azure.WebJobs.Script.WebHost
                 // TODO: DI (FACAVAL) Review metrics logger registration
                 services.AddSingleton<IMetricsLogger, WebHostMetricsLogger>();
                 services.AddSingleton<IScriptEventManager, ScriptEventManager>();
-                services.AddSingleton<IScriptHostEnvironment, WebScriptHostEnvironment>();
+                services.AddSingleton<IScriptJobHostEnvironment, WebScriptJobHostEnvironment>();
+                services.AddSingleton<IEnvironment>(SystemEnvironment.Instance);
+                services.AddTransient<IExtensionsManager, ExtensionsManager>();
 
                 // Script binding providers
                 services.AddSingleton<IScriptBindingProvider, WebJobsCoreScriptBindingProvider>();
