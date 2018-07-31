@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.Azure.WebJobs.Script.Description;
 using Microsoft.Azure.WebJobs.Script.Diagnostics;
@@ -38,7 +39,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
             _settingsManager = ScriptSettingsManager.Instance;
             FixtureId = testId;
-            string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
+            IConnectionStringProvider connectionStringProvider = TestHelpers.GetTestConnectionStringProvider();
+            string connectionString = connectionStringProvider.GetConnectionString(ConnectionStringNames.Storage);
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
             QueueClient = storageAccount.CreateCloudQueueClient();
             BlobClient = storageAccount.CreateCloudBlobClient();
@@ -51,6 +53,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             var scriptOptions = new ScriptHostOptions()
             {
                 RootScriptPath = rootPath,
+                RootLogPath = TestHelpers.GetHostLogFileDirectory().Parent.FullName,
                 FileLoggingMode = FileLoggingMode.Always,
             };
 
@@ -62,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             RequestConfiguration = new HttpConfiguration();
 
             EventManager = new ScriptEventManager();
-            ScriptHostEnvironmentMock = new Mock<IScriptHostEnvironment>();
+            ScriptJobHostEnvironmentMock = new Mock<IScriptJobHostEnvironment>();
             LoggerProvider = new TestLoggerProvider();
             //ILoggerProviderFactory loggerProviderFactory = new TestLoggerProviderFactory(LoggerProvider);
 
@@ -84,7 +87,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 {
                     s.AddSingleton<IScriptEventManager>(EventManager);
                     s.AddSingleton<IOptions<ScriptHostOptions>>(new OptionsWrapper<ScriptHostOptions>(scriptOptions));
-                    s.AddSingleton<ProxyClientExecutor>(proxyClient);
+
+                    if (proxyClient != null)
+                    {
+                        s.AddSingleton<ProxyClientExecutor>(proxyClient);
+                    }
                 })
                 .Build();
 
@@ -100,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         public TestLoggerProvider LoggerProvider { get; }
 
-        public Mock<IScriptHostEnvironment> ScriptHostEnvironmentMock { get; }
+        public Mock<IScriptJobHostEnvironment> ScriptJobHostEnvironmentMock { get; }
 
         public CloudBlobContainer TestInputContainer { get; private set; }
 
