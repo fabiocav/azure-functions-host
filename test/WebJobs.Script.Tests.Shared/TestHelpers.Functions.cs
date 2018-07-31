@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
     {
         public static IHost GetDefaultHost(Action<ScriptWebHostOptions> configure = null)
         {
-            if (configure== null)
+            if (configure == null)
             {
                 configure = o =>
                 {
