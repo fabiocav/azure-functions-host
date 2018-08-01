@@ -252,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Test depending on blob/storage extension. We either need to reference them from tests or change to core bindings")]
         public void ValidateFunctionBindingArguments_ReturnBinding_Succeeds()
         {
             Collection<FunctionParameter> parameters = new Collection<FunctionParameter>()
@@ -360,7 +360,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 var environmentMock = new Mock<IScriptJobHostEnvironment>();
 
                 // Create the invoker dependencies and setup the appropriate method to throw the exception
-                RunDependencies dependencies = CreateDependencies(environment: environmentMock.Object);
+                RunDependencies dependencies = CreateDependencies(s =>
+                {
+                    s.AddSingleton<IScriptJobHostEnvironment>(environmentMock.Object);
+                });
 
                 // Create a dummy file to represent our function
                 string filePath = Path.Combine(tempDirectory.Path, Guid.NewGuid().ToString() + ".csx");
@@ -396,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         // TODO: DI (FACAVAL) Use test helpers to create host and inject services
-        private RunDependencies CreateDependencies(IScriptJobHostEnvironment environment = null, Action<IServiceCollection> configureServices = null)
+        private RunDependencies CreateDependencies(Action<IServiceCollection> configureServices = null)
         {
             var dependencies = new RunDependencies();
 
