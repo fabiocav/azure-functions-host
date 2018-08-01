@@ -57,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                      b.ConfigureLogging(l =>
                      {
                          l.AddProvider(_loggerProvider);
+                         l.AddFilter<TestLoggerProvider>(_ => true);
                      });
 
                      configureJobHost?.Invoke(b);

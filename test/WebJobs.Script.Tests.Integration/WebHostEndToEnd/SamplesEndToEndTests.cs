@@ -16,6 +16,8 @@ using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.Azure.WebJobs.Script.WebHost;
 using Microsoft.Azure.WebJobs.Script.WebHost.Authentication;
 using Microsoft.Azure.WebJobs.Script.WebHost.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.WebJobs.Script.Tests;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -780,8 +782,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
         [Fact]
         public async Task HostLog_AdminLevel_Succeeds()
         {
-            TestHelpers.ClearHostLogs();
-
             var request = new HttpRequestMessage(HttpMethod.Post, "admin/host/log");
             request.Headers.Add(AuthenticationLevelHandler.FunctionsKeyHeaderName, await _fixture.Host.GetMasterKeyAsync());
             var logs = new HostLogEntry[]
@@ -925,6 +925,33 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
             public TestFixture() :
                 base(Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\..\sample"), "samples")
             {
+            }
+
+            public override void ConfigureJobHost(IHostBuilder builder)
+            {
+                base.ConfigureJobHost(builder);
+
+                builder
+                    .ConfigureServices(s =>
+                    {
+                        s.Configure<ScriptHostOptions>(o =>
+                        {
+                            o.Functions = new[]
+                            {
+                                "HttpTrigger",
+                                "HttpTrigger-CSharp",
+                                "HttpTrigger-CSharp-CustomRoute",
+                                "HttpTrigger-CSharp-POCO",
+                                "HttpTrigger-CustomRoute-Get",
+                                "HttpTrigger-Disabled",
+                                "HttpTriggerWithObject-CSharp",
+                                "ManualTrigger"
+                            };
+
+                            // TODO DI: This should be set automatically
+                            o.MaxMessageLengthBytes = ScriptHost.DefaultMaxMessageLengthBytesDynamicSku;
+                        });
+                    });
             }
 
             protected override async Task CreateTestStorageEntities()
