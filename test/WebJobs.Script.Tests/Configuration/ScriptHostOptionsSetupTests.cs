@@ -75,6 +75,35 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Configuration
             Assert.Equal("Tools", options.WatchDirectories.ElementAt(2));
         }
 
+        [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource)")]
+        public void Configure_AllowPartialHostStartup()
+        {
+            Build BREAK 
+            //var settings = new Dictionary<string, string>
+            //{
+            //    { ConfigurationPath.Combine(ConfigurationSectionNames.JobHost, "fileWatchingEnabled"), "true" }
+            //};
+
+            //var options = new ScriptHostOptions();
+
+            //// Validate default (this should be in another test - migrated here for now)
+            //Assert.True(options.FileWatchingEnabled);
+
+            //Assert.True(options.HostConfig.AllowPartialHostStartup);
+
+            //// explicit setting can override our default
+            //scriptConfig = new ScriptHostConfiguration();
+            //config["allowPartialHostStartup"] = new JValue(true);
+            //ScriptHost.ApplyConfiguration(config, scriptConfig);
+            //Assert.True(scriptConfig.HostConfig.AllowPartialHostStartup);
+
+            //// explicit setting can override our default
+            //scriptConfig = new ScriptHostConfiguration();
+            //config["allowPartialHostStartup"] = new JValue(false);
+            //ScriptHost.ApplyConfiguration(config, scriptConfig);
+            //Assert.False(scriptConfig.HostConfig.AllowPartialHostStartup);
+        }
+
         private ScriptHostOptionsSetup CreateSetupWithConfiguration(Dictionary<string, string> settings = null)
         {
             var builder = new ConfigurationBuilder();
