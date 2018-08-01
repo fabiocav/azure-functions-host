@@ -9,6 +9,7 @@
     <Import_RootNamespace>Microsoft.Azure.WebJobs.Script.Tests</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)DelegatedScriptJobHostBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HttpTestHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NullScriptHostEnvironment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SingleThreadedSynchronizationContext.cs" />
