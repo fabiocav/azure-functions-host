@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Xunit;
 
@@ -78,7 +77,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.CosmosDB
             Assert.Equal(updatedDoc.Id, doc.Id);
             Assert.NotEqual(doc.ETag, updatedDoc.ETag);
         }
-
     }
 
     public abstract class CosmosDBTestFixture : EndToEndTestFixture
@@ -138,9 +136,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.CosmosDB
             await DocumentClient.DeleteDocumentCollectionAsync(leasesCollectionsUri);
         }
 
-        public override void Dispose()
+        public override async Task DisposeAsync()
         {
-            base.Dispose();
+            await base.DisposeAsync();
             DocumentClient?.Dispose();
         }
     }

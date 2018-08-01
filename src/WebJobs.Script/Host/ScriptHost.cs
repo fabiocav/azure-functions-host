@@ -460,7 +460,7 @@ namespace Microsoft.Azure.WebJobs.Script
                     registrations,
                     languageWorkerConfig,
                     server.Uri,
-                    NullLoggerFactory.Instance); // TODO: DI (FACAVAL) Pass appropriate logger. Channel facory should likely be a service.
+                    _loggerFactory); // TODO: DI (FACAVAL) Pass appropriate logger. Channel facory should likely be a service.
             };
 
             var configFactory = new WorkerConfigFactory(ScriptSettingsManager.Instance.Configuration, _startupLogger);

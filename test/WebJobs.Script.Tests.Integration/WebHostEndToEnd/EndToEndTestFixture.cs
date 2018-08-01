@@ -7,32 +7,37 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json.Linq;
+using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
 {
-    public abstract class EndToEndTestFixture : IDisposable
+    public abstract class EndToEndTestFixture : IAsyncLifetime
     {
         private string _copiedRootPath;
+        private readonly string _rootPath;
+        private readonly string _extensionName;
+        private readonly string _extensionVersion;
 
         protected EndToEndTestFixture(string rootPath, string testId, string extensionName = null, string extensionVersion = null)
         {
             FixtureId = testId;
-            string connectionString = AmbientConnectionStringProvider.Instance.GetConnectionString(ConnectionStringNames.Storage);
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
 
-            QueueClient = storageAccount.CreateCloudQueueClient();
-            BlobClient = storageAccount.CreateCloudBlobClient();
-            TableClient = storageAccount.CreateCloudTableClient();
+            _rootPath = rootPath;
+            _extensionName = extensionName;
+            _extensionVersion = extensionVersion;
+        }
 
-            CreateTestStorageEntities().Wait();
-
+        public async Task InitializeAsync()
+        {
             _copiedRootPath = Path.Combine(Path.GetTempPath(), "FunctionsE2E", DateTime.UtcNow.ToString("yyMMdd-HHmmss"));
-            FileUtility.CopyDirectory(rootPath, _copiedRootPath);
+            FileUtility.CopyDirectory(_rootPath, _copiedRootPath);
 
             // Allow derived classes to limit functions. We'll update host.json in the copied location
             // so it only affects this fixture's instance.
@@ -45,16 +50,23 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
             File.WriteAllText(hostJsonPath, hostJson.ToString());
 
-            Host = new TestFunctionHost(_copiedRootPath);
+            Host = new TestFunctionHost(_copiedRootPath, ConfigureJobHost);
+
+            string connectionString = Host.JobHostServices.GetService<IConnectionStringProvider>().GetConnectionString(ConnectionStringNames.Storage);
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
+
+            QueueClient = storageAccount.CreateCloudQueueClient();
+            BlobClient = storageAccount.CreateCloudBlobClient();
+            TableClient = storageAccount.CreateCloudTableClient();
+
+            await CreateTestStorageEntities();
 
             // We can currently only support a single extension.
-            if (extensionName != null && extensionVersion != null)
+            if (_extensionName != null && _extensionVersion != null)
             {
                 Host.SetNugetPackageSources("http://www.myget.org/F/azure-appservice/api/v2", "https://api.nuget.org/v3/index.json");
-                Host.InstallBindingExtension(extensionName, extensionVersion).Wait(TimeSpan.FromSeconds(30));
+                Host.InstallBindingExtension(_extensionName, _extensionVersion).Wait(TimeSpan.FromSeconds(30));
             }
-
-            Host.StartAsync().Wait(TimeSpan.FromSeconds(30));
         }
 
         public CloudBlobContainer TestInputContainer { get; private set; }
@@ -76,6 +88,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         public TestFunctionHost Host { get; private set; }
 
         public string FixtureId { get; private set; }
+
+        public virtual void ConfigureJobHost(IHostBuilder builder)
+        {
+        }
 
         /// <summary>
         /// Override this to set the list of functions to write to host.json.
@@ -162,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
         }
 
-        public virtual void Dispose()
+        public virtual Task DisposeAsync()
         {
             Host?.Dispose();
 
@@ -182,6 +198,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                     // best effort
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         private class TestEntity : TableEntity

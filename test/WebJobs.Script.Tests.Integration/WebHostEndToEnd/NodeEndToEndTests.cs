@@ -14,6 +14,8 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Azure.WebJobs.Script.WebHost.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebJobs.Script.Tests;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -925,6 +927,27 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
         {
             public TestFixture() : base(@"TestScripts\Node", "node")
             {
+            }
+
+            public override void ConfigureJobHost(IHostBuilder builder)
+            {
+                base.ConfigureJobHost(builder);
+
+                builder
+                    .AddAzureStorage()
+                    .ConfigureServices(s =>
+                    {
+                        s.Configure<ScriptHostOptions>(o =>
+                        {
+                            o.Functions = new[]
+                            {
+                                "HttpTriggerToBlob",
+                                "ManualTrigger",
+                                "MultipleOutputs",
+                                "MultipleInputs"
+                            };
+                        });
+                    });
             }
         }
 
