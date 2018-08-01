@@ -103,11 +103,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             public TestFixture() : base(@"TestScripts\DirectLoad\", "dotnet")
             {
             }
-
-            public override void Dispose()
-            {
-                base.Dispose();
-            }
         }
     }
 }

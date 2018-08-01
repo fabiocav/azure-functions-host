@@ -945,7 +945,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
                                 "HttpTrigger-CustomRoute-Get",
                                 "HttpTrigger-Disabled",
                                 "HttpTriggerWithObject-CSharp",
-                                "ManualTrigger"
+                                "ManualTrigger",
+                                "ManualTrigger-CSharp"
                             };
 
                             // TODO DI: This should be set automatically

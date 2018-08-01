@@ -7,8 +7,8 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Script.Binding;
-using Microsoft.WebJobs.Script.Tests;
 using Microsoft.Azure.WebJobs.Script.Rpc;
+using Microsoft.WebJobs.Script.Tests;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests.Integration.ScriptHostEndToEnd
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Integration.ScriptHostEndToEnd
             finally
             {
                 Environment.SetEnvironmentVariable(LanguageWorkerConstants.FunctionWorkerRuntimeSettingName, string.Empty);
-                fixture?.Dispose();
+                await fixture?.DisposeAsync();
             }
         }
     }
