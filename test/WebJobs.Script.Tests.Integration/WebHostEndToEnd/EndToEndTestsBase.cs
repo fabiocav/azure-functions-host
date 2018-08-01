@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 // make sure the input string made it all the way through
                 var logs = Fixture.Host.GetLogMessages();
                 return logs.Any(p => p.FormattedMessage != null && p.FormattedMessage.Contains(testData));
-            }, throwWhenDebugging: true, timeout: 10000, userMessageCallback: Fixture.Host.GetLog);
+            }, userMessageCallback: Fixture.Host.GetLog);
         }
 
         public async Task FunctionLogging_SucceedsTest()

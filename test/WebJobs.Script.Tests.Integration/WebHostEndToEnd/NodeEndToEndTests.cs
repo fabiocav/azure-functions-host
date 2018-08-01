@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
             {
                 logs = Fixture.Host.GetLogMessages(LogCategories.CreateFunctionUserCategory("Scenarios")).Select(p => p.FormattedMessage).ToList();
                 return logs.Count == 10;
-            });
+            }, userMessageCallback: Fixture.Host.GetLog);
 
             // verify use of context.log to log complex objects
             LogMessage scriptTrace = Fixture.Host.GetLogMessages().Single(p => p.FormattedMessage != null && p.FormattedMessage.Contains(testData));
@@ -941,11 +941,27 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
                         {
                             o.Functions = new[]
                             {
+                                "BlobTriggerToBlob",
+                                "HttpTrigger",
+                                "HttpTrigger-Scenarios",
+                                "HttpTriggerExpressApi",
+                                "HttpTriggerPromise",
                                 "HttpTriggerToBlob",
+                                "Invalid",
                                 "ManualTrigger",
+                                "MultipleExports",
                                 "MultipleOutputs",
-                                "MultipleInputs"
+                                "MultipleInputs",
+                                "QueueTriggerByteArray",
+                                "QueueTriggerToBlob",
+                                "SingleNamedExport",
+                                "TableIn",
+                                "TableOut",
+                                "Scenarios"
                             };
+
+                            // TODO DI: This should naturally default
+                            o.MaxMessageLengthBytes = ScriptHost.DefaultMaxMessageLengthBytesDynamicSku;
                         });
                     });
             }
