@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +12,6 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Script.Tests
@@ -39,17 +37,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             _copiedRootPath = Path.Combine(Path.GetTempPath(), "FunctionsE2E", DateTime.UtcNow.ToString("yyMMdd-HHmmss"));
             FileUtility.CopyDirectory(_rootPath, _copiedRootPath);
 
-            // Allow derived classes to limit functions. We'll update host.json in the copied location
-            // so it only affects this fixture's instance.
-            IEnumerable<string> functions = GetActiveFunctions();
-            string hostJsonPath = Path.Combine(_copiedRootPath, "host.json");
-            JObject hostJson = JObject.Parse(File.ReadAllText(hostJsonPath));
-            if (functions != null && functions.Any())
-            {
-                hostJson["functions"] = JArray.FromObject(functions);
-            }
-            File.WriteAllText(hostJsonPath, hostJson.ToString());
-
             Host = new TestFunctionHost(_copiedRootPath, ConfigureJobHost);
 
             string connectionString = Host.JobHostServices.GetService<IConnectionStringProvider>().GetConnectionString(ConnectionStringNames.Storage);
@@ -65,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             if (_extensionName != null && _extensionVersion != null)
             {
                 Host.SetNugetPackageSources("http://www.myget.org/F/azure-appservice/api/v2", "https://api.nuget.org/v3/index.json");
-                Host.InstallBindingExtension(_extensionName, _extensionVersion).Wait(TimeSpan.FromSeconds(30));
+                await Host.InstallBindingExtensionAsync(_extensionName, _extensionVersion);
             }
         }
 
@@ -91,15 +78,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         public virtual void ConfigureJobHost(IHostBuilder builder)
         {
-        }
-
-        /// <summary>
-        /// Override this to set the list of functions to write to host.json.
-        /// </summary>
-        /// <returns>The list of enabled functions.</returns>
-        protected virtual IEnumerable<string> GetActiveFunctions()
-        {
-            return Enumerable.Empty<string>();
         }
 
         public async Task<CloudQueue> GetNewQueue(string queueName)

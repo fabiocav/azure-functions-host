@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task InstallBindingExtension(string packageName, string packageVersion)
+        public async Task InstallBindingExtensionAsync(string packageName, string packageVersion)
         {
             HostSecretsInfo secrets = await SecretManager.GetHostSecretsAsync();
             string uri = $"admin/host/extensions?code={secrets.MasterKey}";
