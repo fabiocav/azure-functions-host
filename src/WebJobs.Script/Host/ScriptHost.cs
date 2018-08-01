@@ -31,7 +31,6 @@ using Microsoft.Azure.WebJobs.Script.Extensibility;
 using Microsoft.Azure.WebJobs.Script.Grpc;
 using Microsoft.Azure.WebJobs.Script.Rpc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using FunctionMetadata = Microsoft.Azure.WebJobs.Script.Description.FunctionMetadata;
@@ -240,6 +239,11 @@ namespace Microsoft.Azure.WebJobs.Script
 
                 // Generate Functions
                 var functionMetadata = _functionMetadataManager.Functions;
+                foreach (var error in _functionMetadataManager.Errors)
+                {
+                    FunctionErrors.Add(error.Key, error.Value.ToArray());
+                }
+
                 var directTypes = GetDirectTypes(functionMetadata);
                 InitializeFunctionDescriptors(functionMetadata);
                 GenerateFunctions(directTypes);

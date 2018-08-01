@@ -5,13 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Azure.WebJobs.Script.Config;
 using Microsoft.Azure.WebJobs.Script.Description;
@@ -305,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         [InlineData("function test")]
         [InlineData("function.test")]
         [InlineData("function0.1")]
-        public void Initialize_InvalidFunctionNames_DoesNotCreateFunctionAndLogsFailure(string functionName)
+        public async Task Initialize_InvalidFunctionNames_DoesNotCreateFunctionAndLogsFailure(string functionName)
         {
             string rootPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             string invalidFunctionNamePath = Path.Combine(rootPath, functionName);
@@ -319,20 +317,22 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 File.WriteAllText(Path.Combine(rootPath, ScriptConstants.HostMetadataFileName), config.ToString());
                 File.WriteAllText(Path.Combine(invalidFunctionNamePath, ScriptConstants.FunctionMetadataFileName), string.Empty);
 
-                var scriptConfig = new ScriptHostOptions()
-                {
-                    RootScriptPath = rootPath
-                };
                 var environment = new Mock<IScriptJobHostEnvironment>();
                 var eventManager = new Mock<IScriptEventManager>();
 
-                //var scriptHost = new ScriptHost(environment.Object, eventManager.Object, scriptConfig, _settingsManager);
-                //scriptHost.Initialize();
+                IHost host = new HostBuilder()
+                    .ConfigureDefaultTestScriptHost(o =>
+                    {
+                        o.ScriptPath = rootPath;
+                    })
+                    .Build();
 
-                //Assert.Equal(1, scriptHost.FunctionErrors.Count);
-                //Assert.Equal(functionName, scriptHost.FunctionErrors.First().Key);
-                //Assert.Equal($"'{functionName}' is not a valid function name.", scriptHost.FunctionErrors.First().Value.First());
-                throw new Exception("Fix test");
+                var scriptHost = host.GetScriptHost();
+                await scriptHost.InitializeAsync();
+
+                Assert.Equal(1, scriptHost.FunctionErrors.Count);
+                Assert.Equal(functionName, scriptHost.FunctionErrors.First().Key);
+                Assert.Equal($"'{functionName}' is not a valid function name.", scriptHost.FunctionErrors.First().Value.First());
             }
             finally
             {

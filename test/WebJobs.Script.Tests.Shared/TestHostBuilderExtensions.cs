@@ -24,19 +24,12 @@ namespace Microsoft.WebJobs.Script.Tests
         {
             var webHostOptions = new ScriptWebHostOptions()
             {
-                IsSelfHost = true
+                IsSelfHost = true,
+                ScriptPath = TestHelpers.FunctionsTestDirectory,
+                LogPath = TestHelpers.GetHostLogFileDirectory().FullName,
             };
 
-            if (configure == null)
-            {
-                configure = o =>
-                {
-                    o.ScriptPath = TestHelpers.FunctionsTestDirectory;
-                    o.LogPath = TestHelpers.GetHostLogFileDirectory().FullName;
-                };
-            }
-
-            configure(webHostOptions);
+            configure?.Invoke(webHostOptions);
 
             // Register root services
             var services = new ServiceCollection();
@@ -49,7 +42,8 @@ namespace Microsoft.WebJobs.Script.Tests
 
             var rootProvider = new WebHostServiceProvider(services);
 
-            builder.AddScriptHost(rootProvider, rootProvider, new OptionsWrapper<ScriptWebHostOptions>(webHostOptions))
+            builder
+                .AddScriptHost(rootProvider, rootProvider, new OptionsWrapper<ScriptWebHostOptions>(webHostOptions))
                 .ConfigureAppConfiguration(c =>
                 {
                     c.AddTestSettings();
