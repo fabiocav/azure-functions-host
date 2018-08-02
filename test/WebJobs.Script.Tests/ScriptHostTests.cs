@@ -90,20 +90,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             //Assert.Equal(expected, ScriptHost.GetRelativeDirectory(path, @"C:\Functions\Scripts"));
         }
 
-        [Fact(Skip = "This test should be updated to validate the FunctionMetadataManager")]
-        public void ReadFunctionMetadata_Succeeds()
-        {
-            var config = new ScriptHostOptions
-            {
-                RootScriptPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\..\sample")
-            };
-
-            var functionErrors = new Dictionary<string, Collection<string>>();
-            var functionDirectories = Directory.EnumerateDirectories(config.RootScriptPath);
-            //var metadata = ScriptHost.ReadFunctionsMetadata(functionDirectories, null, functionErrors);
-            //Assert.Equal(41, metadata.Count);
-        }
-
         [Fact]
         public static async Task OnDebugModeFileChanged_TriggeredWhenDebugFileUpdated()
         {

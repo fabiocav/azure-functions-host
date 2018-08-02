@@ -78,7 +78,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Configuration
         [Fact(Skip = "ApplyConfiguration no longer exists. Validate logic (moved to HostJsonFileConfigurationSource)")]
         public void Configure_AllowPartialHostStartup()
         {
-            Build BREAK 
             //var settings = new Dictionary<string, string>
             //{
             //    { ConfigurationPath.Combine(ConfigurationSectionNames.JobHost, "fileWatchingEnabled"), "true" }
