@@ -25,12 +25,13 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Integration.ScriptHostEndToEnd
         [InlineData("dotNet")]
         public async Task HttpTrigger_Get(string functionsWorkerLanguage)
         {
-            NodeScriptHostTests.TestFixture fixture = null;
+            TestFixture fixture = null;
 
             try
             {
                 string functionName = "HttpTrigger";
-                fixture = new NodeScriptHostTests.TestFixture(new Collection<string> { functionName }, functionsWorkerLanguage);
+                fixture = new TestFixture(new Collection<string> { functionName }, functionsWorkerLanguage);
+                await fixture.InitializeAsync();
 
                 string url = $"http://localhost/api/{functionName}?name=test";
                 var request = HttpTestHelpers.CreateHttpRequest("GET", url);
@@ -56,6 +57,20 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.Integration.ScriptHostEndToEnd
             {
                 Environment.SetEnvironmentVariable(LanguageWorkerConstants.FunctionWorkerRuntimeSettingName, string.Empty);
                 await fixture?.DisposeAsync();
+            }
+        }
+
+        private class TestFixture : NodeScriptHostTests.TestFixture
+        {
+            public TestFixture(ICollection<string> functions, string functionsWorkerLanguage)
+                : base(functions, functionsWorkerLanguage)
+            {
+            }
+
+            protected override Task CreateTestStorageEntities()
+            {
+                // No need for this, so let's save some time.
+                return Task.CompletedTask;
             }
         }
     }

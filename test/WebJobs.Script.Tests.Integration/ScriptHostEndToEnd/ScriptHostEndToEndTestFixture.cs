@@ -232,8 +232,11 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         public virtual async Task DisposeAsync()
         {
-            await Host.StopAsync();
-            Host.Dispose();
+            if (Host != null)
+            {
+                await Host.StopAsync();
+                Host.Dispose();
+            }
         }
 
         private class TestEntity : TableEntity
