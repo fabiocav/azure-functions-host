@@ -810,7 +810,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
             Assert.Equal(1, array[1]);
         }
 
-        [Fact]
+        [Fact(Skip = "Disabled until extension is supported")]
         public void TimerTrigger()
         {
             var logs = Fixture.Host.GetLogMessages(LogCategories.CreateFunctionUserCategory("TimerTrigger"));

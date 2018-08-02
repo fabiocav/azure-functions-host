@@ -369,13 +369,13 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
             File.SetLastWriteTimeUtc(sharedModulePath, DateTime.UtcNow);
 
             // wait for the module to be reloaded
-            await TestHelpers.Await(() =>
+            await TestHelpers.Await(async () =>
             {
                 request = new HttpRequestMessage(HttpMethod.Get, uri);
-                response = _fixture.Host.HttpClient.SendAsync(request).GetAwaiter().GetResult();
+                response = await _fixture.Host.HttpClient.SendAsync(request);
                 timestamp = response.Headers.GetValues("Shared-Module").First();
                 return initialTimestamp != timestamp;
-            }, timeout: 5000, pollingInterval: 1000);
+            }, timeout: 5000, pollingInterval: 500);
             Assert.NotEqual(initialTimestamp, timestamp);
 
             initialTimestamp = timestamp;
@@ -944,6 +944,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests.EndToEnd
                                 "HttpTrigger-CSharp-POCO",
                                 "HttpTrigger-CustomRoute-Get",
                                 "HttpTrigger-Disabled",
+                                "HttpTrigger-Java",
                                 "HttpTriggerWithObject-CSharp",
                                 "ManualTrigger",
                                 "ManualTrigger-CSharp"

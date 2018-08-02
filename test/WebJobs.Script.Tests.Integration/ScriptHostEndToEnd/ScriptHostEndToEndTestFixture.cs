@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Script.Rpc;
 using Microsoft.Azure.WebJobs.Script.WebHost.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.WebJobs.Script.Tests;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -137,6 +138,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                     }
 
                     ConfigureServices(s);
+                })
+                .ConfigureLogging(b =>
+                {
+                    b.AddProvider(LoggerProvider);
                 })
                 .Build();
 
