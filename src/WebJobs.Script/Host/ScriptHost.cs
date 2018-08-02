@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Script
         private readonly ScriptTypeLocator _typeLocator;
         private readonly IDebugStateProvider _debugManager;
         private readonly ICollection<IScriptBindingProvider> _bindingProviders;
+        private readonly IJobHostMetadataProvider _metadataProvider;
         private IPrimaryHostStateProvider _primaryHostStateProvider;
         private string _instanceId;
         // TODO: DI (FACAVAL) Review
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.WebJobs.Script
             IDebugStateProvider debugManager,
             ICollection<IScriptBindingProvider> bindingProviders,
             IPrimaryHostStateProvider primaryHostStateProvider,
+            IJobHostMetadataProvider metadataProvider,
             ScriptSettingsManager settingsManager = null,
             ProxyClientExecutor proxyClient = null)
             : base(options, jobHostContextFactory)
@@ -132,6 +134,7 @@ namespace Microsoft.Azure.WebJobs.Script
             _debugManager = debugManager;
             _primaryHostStateProvider = primaryHostStateProvider;
             _bindingProviders = bindingProviders;
+            _metadataProvider = metadataProvider;
         }
 
         // TODO: DI (FACAVAL) Do we still need this event?
@@ -983,15 +986,14 @@ namespace Microsoft.Azure.WebJobs.Script
         private void ApplyJobHostMetadata()
         {
             // TODO: DI (FACAVAL) Review
-            //var metadataProvider = this.CreateMetadataProvider();
-            //foreach (var function in Functions)
-            //{
-            //    var metadata = metadataProvider.GetFunctionMetadata(function.Metadata.Name);
-            //    if (metadata != null)
-            //    {
-            //        function.Metadata.IsDisabled = metadata.IsDisabled;
-            //    }
-            //}
+            foreach (var function in Functions)
+           {
+                var metadata = _metadataProvider.GetFunctionMetadata(function.Metadata.Name);
+                if (metadata != null)
+                {
+                    function.Metadata.IsDisabled = metadata.IsDisabled;
+                }
+            }
         }
 
         internal static string GetAssemblyFileVersion(Assembly assembly)
