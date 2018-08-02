@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Script;
 using Microsoft.Azure.WebJobs.Script.Tests;
 using Microsoft.Azure.WebJobs.Script.WebHost;
@@ -35,9 +34,9 @@ namespace Microsoft.WebJobs.Script.Tests
             var services = new ServiceCollection();
             AddMockedSingleton<IScriptHostManager>(services);
             AddMockedSingleton<IScriptWebHostEnvironment>(services);
-            AddMockedSingleton<IWebJobsRouter>(services);
             AddMockedSingleton<IEventGenerator>(services);
             AddMockedSingleton<AspNetCore.Hosting.IApplicationLifetime>(services);
+            services.AddWebJobsScriptHostRouting();
             services.AddLogging();
 
             var rootProvider = new WebHostServiceProvider(services);

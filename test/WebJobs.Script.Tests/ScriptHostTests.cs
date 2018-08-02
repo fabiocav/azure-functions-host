@@ -105,26 +105,32 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
-        public async Task OnDebugModeFileChanged_TriggeredWhenDebugFileUpdated()
+        public static async Task OnDebugModeFileChanged_TriggeredWhenDebugFileUpdated()
         {
-            ScriptHost host = _fixture.ScriptHost;
-            string debugSentinelFilePath = Path.Combine(host.ScriptOptions.RootLogPath, "Host", ScriptConstants.DebugSentinelFileName);
+            var host = new HostBuilder()
+                .ConfigureDefaultTestScriptHost(runStartupHostedServices: true)
+                .Build();
 
+            ScriptHost scriptHost = host.GetScriptHost();
+            string debugSentinelFilePath = Path.Combine(scriptHost.ScriptOptions.RootLogPath, "Host", ScriptConstants.DebugSentinelFileName);
+
+            // Write the initial file.
             if (!File.Exists(debugSentinelFilePath))
             {
                 File.WriteAllText(debugSentinelFilePath, string.Empty);
             }
 
-            var debugState = _fixture.Host.Services.GetService<IDebugStateProvider>();
-
             // first put the host into a non-debug state
+            var debugState = host.Services.GetService<IDebugStateProvider>();
+            debugState.LastDebugNotify = DateTime.MinValue;
+
+            await host.StartAsync();
+
             await TestHelpers.Await(() =>
             {
-                debugState.LastDebugNotify = DateTime.MinValue;
-                return !host.InDebugMode;
-            });
-
-            Assert.False(host.InDebugMode, $"Expected InDebugMode to be false. Now: {DateTime.UtcNow}; Sentinel LastWriteTime: {File.GetLastWriteTimeUtc(debugSentinelFilePath)}; LastDebugNotify: {debugState.LastDebugNotify}.");
+                return !scriptHost.InDebugMode;
+            },
+            userMessageCallback: () => $"Expected InDebugMode to be false. Now: {DateTime.UtcNow}; Sentinel LastWriteTime: {File.GetLastWriteTimeUtc(debugSentinelFilePath)}; LastDebugNotify: {debugState.LastDebugNotify}.");
 
             // verify that our file watcher for the debug sentinel file is configured
             // properly by touching the file and ensuring that our host goes into
@@ -133,10 +139,8 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
             await TestHelpers.Await(() =>
             {
-                return host.InDebugMode;
-            });
-
-            Assert.True(host.InDebugMode);
+                return scriptHost.InDebugMode;
+            }, userMessageCallback: () => "InDebugMode never set to true.");
         }
 
         [Fact]
